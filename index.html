@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>TSC Event Survey - 2025.12</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #050816;
+      --bg-alt: #0b1020;
+      --card: #111827;
+      --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.2);
+      --text-main: #e5e7eb;
+      --text-muted: #9ca3af;
+      --danger: #f97373;
+      --radius-lg: 18px;
+      --shadow-soft: 0 18px 40px rgba(0,0,0,0.45);
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at top, #1f2937 0, #020617 55%);
+      color: var(--text-main);
+      display: flex;
+      justify-content: center;
+      padding: 24px 16px 40px;
+    }
+
+    .app-shell {
+      width: 100%;
+      max-width: 560px;
+    }
+
+    .card {
+      background: linear-gradient(135deg, #020617, #020617 35%, #0b1120);
+      border-radius: 24px;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid rgba(148, 163, 184, 0.15);
+      padding: 18px 18px 22px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: -120px;
+      opacity: 0.18;
+      background:
+        radial-gradient(circle at 0 0, rgba(56, 189, 248, 0.4), transparent 55%),
+        radial-gradient(circle at 100% 0, rgba(129, 140, 248, 0.4), transparent 55%);
+      pointer-events: none;
+    }
+
+    .card-inner {
+      position: relative;
+      z-index: 1;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 0, #38bdf8, #475569);
+      box-shadow: 0 0 18px rgba(56, 189, 248, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #0b1120;
+      font-weight: 800;
+      font-size: 18px;
+    }
+
+    .brand-text-main {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.6px;
+    }
+
+    .brand-text-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .lang-select-wrap {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(15, 23, 42, 0.8);
+      border-radius: 999px;
+      padding: 3px 8px 3px 10px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+    }
+
+    .lang-select-wrap span {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    select {
+      background: transparent;
+      border: none;
+      color: var(--text-main);
+      font-size: 12px;
+      padding: 3px 4px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    main {
+      margin-top: 8px;
+    }
+
+    h1 {
+      font-size: 18px;
+      margin: 0;
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    .notice {
+      font-size: 11px;
+      color: var(--accent);
+      background: var(--accent-soft);
+      border-radius: 999px;
+      padding: 4px 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+
+    .notice-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.9);
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .section-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1.4px;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+
+    .question {
+      background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.8), #020617);
+      border-radius: var(--radius-lg);
+      padding: 12px 12px 10px;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+    }
+
+    .question-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .question-title {
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .badge {
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .helper {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .field {
+      position: relative;
+      margin-top: 4px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 8px 11px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--text-main);
+      font-size: 13px;
+    }
+
+    input[type="text"]::placeholder {
+      color: #6b7280;
+    }
+
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 2px;
+    }
+
+    .option-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid transparent;
+      font-size: 12px;
+      color: var(--text-main);
+    }
+
+    .option-label input {
+      accent-color: var(--accent);
+    }
+
+    .option-label:hover {
+      border-color: rgba(56, 189, 248, 0.7);
+      background: rgba(15, 23, 42, 0.95);
+    }
+
+    .option-code {
+      font-size: 11px;
+      color: var(--accent);
+      min-width: 20px;
+    }
+
+    .submit-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    button[type="submit"] {
+      border: none;
+      border-radius: 999px;
+      padding: 9px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      background: radial-gradient(circle at top left, #38bdf8, #4f46e5);
+      color: #0b1120;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 12px 30px rgba(37, 99, 235, 0.7);
+    }
+
+    button[type="submit"]:active {
+      transform: translateY(1px);
+      box-shadow: 0 6px 14px rgba(37, 99, 235, 0.6);
+    }
+
+    .submit-caption {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    .error {
+      color: var(--danger);
+      font-size: 11px;
+      margin-top: 2px;
+    }
+
+    .success-box {
+      margin-top: 14px;
+      padding: 10px 11px;
+      border-radius: 14px;
+      border: 1px solid rgba(34, 197, 94, 0.5);
+      background: radial-gradient(circle at top left, rgba(22, 163, 74, 0.35), #022c22);
+      font-size: 11px;
+      color: #bbf7d0;
+    }
+
+    .csv-box {
+      margin-top: 8px;
+      padding: 10px 11px;
+      border-radius: 14px;
+      border: 1px dashed rgba(148, 163, 184, 0.5);
+      background: rgba(15, 23, 42, 0.75);
+    }
+
+    .csv-title {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 72px;
+      resize: vertical;
+      border-radius: 10px;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      background: #020617;
+      color: var(--text-main);
+      font-size: 11px;
+      padding: 6px 8px;
+    }
+
+    footer {
+      margin-top: 10px;
+      text-align: center;
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    @media (min-width: 640px) {
+      .card {
+        padding: 20px 22px 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <div class="card">
+      <div class="card-inner">
+        <header>
+          <div class="brand">
+            <div class="brand-logo">T</div>
+            <div>
+              <div class="brand-text-main">TSC EVENT</div>
+              <div class="brand-text-sub">Multilingual Survey Form</div>
+            </div>
+          </div>
+          <div class="lang-select-wrap">
+            <span>Lang</span>
+            <select id="languageSelect"></select>
+          </div>
+        </header>
+
+        <main>
+          <h1 data-i18n="app_title">TSC Event Survey - 2025.12</h1>
+          <div class="subtitle">
+            <span data-i18n="note_schedule">
+              The schedule is just a general guideline, and actual times may vary depending on the situation.
+            </span>
+          </div>
+
+          <div class="notice">
+            <span class="notice-dot"></span>
+            <span>Multi-language UI — answers saved in English codes (A/B/C…)</span>
+          </div>
+
+          <form id="surveyForm">
+            <!-- Q01 -->
+            <div class="question">
+              <div class="question-header">
+                <div class="question-title" data-i18n="q01_title">
+                  Please enter your player name.
+                </div>
+                <div class="badge">Q01</div>
+              </div>
+              <div class="field">
+                <input
+                  id="playerName"
+                  type="text"
+                  required
+                  data-i18n-placeholder="q01_placeholder"
+                  placeholder="Enter your answer"
+                />
+              </div>
+              <div id="error-playerName" class="error" style="display:none;"></div>
+            </div>
+
+            <!-- Q02 -->
+            <div class="question">
+              <div class="section-label" data-i18n="q02_section">Polar Invasion, etc</div>
+              <div class="question-header">
+                <div class="question-title" data-i18n="q02_title">
+                  Please choose your first choice for the time slot.
+                </div>
+                <div class="badge">Q02</div>
+              </div>
+
+              <div class="options">
+                <label class="option-label">
+                  <input type="radio" name="q02" value="A" />
+                  <span class="option-code">A</span>
+                  <span data-i18n="q02_opt_A">Server Time 04:00 - 05:00</span>
+                </label>
+
+                <label class="option-label">
+                  <input type="radio" name="q02" value="B" />
+                  <span class="option-code">B</span>
+                  <span data-i18n="q02_opt_B">Server Time 13:00 - 14:00</span>
+                </label>
+
+                <label class="option-label">
+                  <input type="radio" name="q02" value="C" />
+                  <span class="option-code">C</span>
+                  <span data-i18n="q02_opt_C">Server Time 21:00 - 22:00</span>
+                </label>
+
+                <label class="option-label">
+                  <input type="radio" name="q02" value="D" />
+                  <span class="option-code">D</span>
+                  <span data-i18n="q02_opt_D">Anytime</span>
+                </label>
+              </div>
+              <div id="error-q02" class="error" style="display:none;"></div>
+            </div>
+
+            <!-- Q03 -->
+            <div class="question">
+              <div class="section-label" data-i18n="q03_section">
+                Elite War / Doom Arena / Zombie Uprise, etc
+              </div>
+              <div class="question-header">
+                <div class="question-title" data-i18n="q03_title">
+                  Please choose your first choice for the time slot.
+                </div>
+                <div class="badge">Q03</div>
+              </div>
+              <div class="helper" data-i18n="note_schedule">
+                The schedule is just a general guideline, and actual times may vary depending on the situation.
+              </div>
+
+              <div class="options">
+                <label class="option-label">
+                  <input type="radio" name="q03" value="A" />
+                  <span class="option-code">A</span>
+                  <span data-i18n="q03_opt_A">Server Time around 04:00 - 05:00</span>
+                </label>
+
+                <label class="option-label">
+                  <input type="radio" name="q03" value="B" />
+                  <span class="option-code">B</span>
+                  <span data-i18n="q03_opt_B">Server Time around 13:00 - 14:00</span>
+                </label>
+
+                <label class="option-label">
+                  <input type="radio" name="q03" value="C" />
+                  <span class="option-code">C</span>
+                  <span data-i18n="q03_opt_C">Server Time around 21:00 - 22:00</span>
+                </label>
+
+                <label class="option-label">
+                  <input type="radio" name="q03" value="D" />
+                  <span class="option-code">D</span>
+                  <span data-i18n="q03_opt_D">Anytime</span>
+                </label>
+
+                <label class="option-label">
+                  <input type="radio" name="q03" value="E" />
+                  <span class="option-code">E</span>
+                  <span data-i18n="q03_opt_E">N/A</span>
+                </label>
+              </div>
+              <div id="error-q03" class="error" style="display:none;"></div>
+            </div>
+
+            <!-- Q04 -->
+            <div class="question">
+              <div class="section-label" data-i18n="q03_section">
+                Elite War / Doom Arena / Zombie Uprise, etc
+              </div>
+              <div class="question-header">
+                <div class="question-title" data-i18n="q04_title">
+                  Please choose your first choice of day.
+                </div>
+                <div class="badge">Q04</div>
+              </div>
+              <div class="helper" data-i18n="note_schedule">
+                The schedule is just a general guideline, and actual times may vary depending on the situation.
+              </div>
+
+              <div class="options">
+                <label class="option-label">
+                  <input type="radio" name="q04" value="A" />
+                  <span class="option-code">A</span>
+                  <span data-i18n="q04_opt_A">Monday</span>
+                </label>
+
+                <label class="option-label">
+                  <input type="radio" name="q04" value="B" />
+                  <span class="option-code">B</span>
+                  <span data-i18n="q04_opt_B">Tuesday</span>
+                </label>
+
+                <label class="option-label">
+                  <input type="radio" name="q04" value="C" />
+                  <span class="option-code">C</span>
+                  <span data-i18n="q04_opt_C">Wednesday</span>
+                </label>
+
+                <label class="option-label">
+                  <input type="radio" name="q04" value="D" />
+                  <span class="option-code">D</span>
+                  <span data-i18n="q04_opt_D">Thursday</span>
+                </label>
+
+                <label class="option-label">
+                  <input type="radio" name="q04" value="E" />
+                  <span class="option-code">E</span>
+                  <span data-i18n="q04_opt_E">Friday</span>
+                </label>
+
+                <label class="option-label">
+                  <input type="radio" name="q04" value="F" />
+                  <span class="option-code">F</span>
+                  <span data-i18n="q04_opt_F">Saturday</span>
+                </label>
+
+                <label class="option-label">
+                  <input type="radio" name="q04" value="G" />
+                  <span class="option-code">G</span>
+                  <span data-i18n="q04_opt_G">Sunday</span>
+                </label>
+
+                <label class="option-label">
+                  <input type="radio" name="q04" value="H" />
+                  <span class="option-code">H</span>
+                  <span data-i18n="q04_opt_H">Any day</span>
+                </label>
+              </div>
+              <div id="error-q04" class="error" style="display:none;"></div>
+            </div>
+
+            <div class="submit-row">
+              <button type="submit">
+                <span data-i18n="btn_submit">Submit</span>
+                <span>➤</span>
+              </button>
+              <div class="submit-caption">
+                Answers are saved as English codes (A/B/C…) for Excel aggregation.
+              </div>
+              <div id="form-error" class="error" style="text-align:center; display:none;"></div>
+            </div>
+          </form>
+
+          <div id="result" style="display:none;">
+            <div class="success-box">
+              <div data-i18n="msg_success">Thank you for your submission!</div>
+              <div style="margin-top:4px;">
+                Copy the CSV row below and paste it into your Excel sheet
+                (columns: timestamp, language, player_name, Q02_time, Q03_time, Q04_day).
+              </div>
+            </div>
+            <div class="csv-box">
+              <div class="csv-title">CSV row (comma-separated):</div>
+              <textarea id="csvOutput" readonly></textarea>
+            </div>
+          </div>
+        </main>
+
+        <footer>
+          TSC Event Survey · Built for multi-language clan scheduling
+        </footer>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // === CONFIG ===
+    // translations.tsv を読み込んで UI テキストを切り替える
+    const TRANSLATION_FILE = "translations.tsv";
+
+    // 言語コード → 表示名
+    const LANGUAGE_LABELS = {
+      "en": "English",
+      "de": "Deutsch (German)",
+      "nl": "Nederlands (Dutch)",
+      "fr": "Français (French)",
+      "ru": "Русский (Russian)",
+      "es": "Español (Spanish)",
+      "pt": "Português (Portuguese)",
+      "it": "Italiano (Italian)",
+      "zh-Hans": "简体中文 (Simplified Chinese)",
+      "ja": "日本語 (Japanese)",
+      "ko": "한국어 (Korean)",
+      "ar": "العربية (Arabic)",
+      "th": "ไทย (Thai)",
+      "vi": "Tiếng Việt (Vietnamese)",
+      "tr": "Türkçe (Turkish)",
+      "pl": "Polski (Polish)",
+      "ms": "Bahasa Melayu (Malay)",
+      "id": "Bahasa Indonesia (Indonesian)"
+    };
+
+    let translations = {};
+    let availableLangs = [];
+    let currentLang = "en";
+
+    function parseTSV(text) {
+      const lines = text.split(/\r?\n/).filter(l => l.trim() !== "");
+      if (lines.length < 2) return;
+      const headerCols = lines[0].split("\t");
+      // key, en, de, ...
+      const langs = headerCols.slice(1);
+      availableLangs = langs;
+
+      const data = {};
+      for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].split("\t");
+        const key = cols[0];
+        if (!key) continue;
+        data[key] = {};
+        langs.forEach((lang, idx) => {
+          data[key][lang] = cols[idx + 1] || "";
+        });
+      }
+      translations = data;
+    }
+
+    function t(key) {
+      const entry = translations[key];
+      if (!entry) return key;
+      return entry[currentLang] || entry["en"] || key;
+    }
+
+    function applyLanguage(lang) {
+      currentLang = lang;
+      document.documentElement.lang = lang;
+      document.documentElement.dir = (lang === "ar") ? "rtl" : "ltr";
+
+      document.querySelectorAll("[data-i18n]").forEach(el => {
+        const key = el.dataset.i18n;
+        el.textContent = t(key);
+      });
+      document.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
+        const key = el.dataset.i18nPlaceholder;
+        el.placeholder = t(key);
+      });
+    }
+
+    function populateLanguageSelect() {
+      const select = document.getElementById("languageSelect");
+      select.innerHTML = "";
+
+      // en を先頭に、その後は availableLangs から
+      const ordered = ["en", ...availableLangs.filter(l => l !== "en")];
+
+      ordered.forEach(code => {
+        if (!availableLangs.includes(code)) return;
+        const opt = document.createElement("option");
+        opt.value = code;
+        opt.textContent = LANGUAGE_LABELS[code] || code;
+        if (code === currentLang) {
+          opt.selected = true;
+        }
+        select.appendChild(opt);
+      });
+
+      select.addEventListener("change", () => {
+        applyLanguage(select.value);
+      });
+    }
+
+    async function loadTranslations() {
+      try {
+        const res = await fetch(TRANSLATION_FILE);
+        if (!res.ok) {
+          console.error("Failed to load translations.tsv");
+          return;
+        }
+        const text = await res.text();
+        parseTSV(text);
+        populateLanguageSelect();
+        applyLanguage(currentLang);
+      } catch (e) {
+        console.error("Error loading translations:", e);
+      }
+    }
+
+    function getRadioValue(name) {
+      const node = document.querySelector(`input[name="${name}"]:checked`);
+      return node ? node.value : "";
+    }
+
+    function setError(id, msg) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (msg) {
+        el.textContent = msg;
+        el.style.display = "block";
+      } else {
+        el.textContent = "";
+        el.style.display = "none";
+      }
+    }
+
+    function handleSubmit(e) {
+      e.preventDefault();
+      setError("form-error", "");
+      setError("error-playerName", "");
+      setError("error-q02", "");
+      setError("error-q03", "");
+      setError("error-q04", "");
+
+      const playerName = document.getElementById("playerName").value.trim();
+      const q02 = getRadioValue("q02");
+      const q03 = getRadioValue("q03");
+      const q04 = getRadioValue("q04");
+
+      let hasError = false;
+      if (!playerName) {
+        setError("error-playerName", "Required / 必須です");
+        hasError = true;
+      }
+      if (!q02) {
+        setError("error-q02", "Please select one option.");
+        hasError = true;
+      }
+      if (!q03) {
+        setError("error-q03", "Please select one option.");
+        hasError = true;
+      }
+      if (!q04) {
+        setError("error-q04", "Please select one option.");
+        hasError = true;
+      }
+      if (hasError) return;
+
+      const timestamp = new Date().toISOString();
+      const row = {
+        timestamp,
+        language: currentLang,
+        player_name: playerName,
+        Q02_time: q02,
+        Q03_time: q03,
+        Q04_day: q04
+      };
+
+      const headers = ["timestamp","language","player_name","Q02_time","Q03_time","Q04_day"];
+      const csvRow = headers.map(h => {
+        const v = row[h] ?? "";
+        // 簡易: カンマやダブルクォート対策
+        if (/[",]/.test(v)) {
+          return `"${String(v).replace(/"/g, '""')}"`;
+        }
+        return v;
+      }).join(",");
+
+      const output = document.getElementById("csvOutput");
+      output.value = csvRow;
+
+      document.getElementById("result").style.display = "block";
+      // 必要ならここでフォームをリセット:
+      // document.getElementById("surveyForm").reset();
+    }
+
+    document.getElementById("surveyForm").addEventListener("submit", handleSubmit);
+
+    // 初期ロード
+    loadTranslations();
+  </script>
+</body>
+</html>
