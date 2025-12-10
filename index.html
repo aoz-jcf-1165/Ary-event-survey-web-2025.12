@@ -71,21 +71,19 @@
       justify-content: space-between;
       gap: 8px;
       margin-bottom: 10px;
-      flex-wrap: wrap; /* スマホで Lang がはみ出さないように */
     }
 
     .brand {
       display: flex;
       align-items: center;
       gap: 8px;
-      min-width: 0;
     }
 
     .brand-logo {
       width: 48px;
       height: 48px;
-      border-radius: 50%;     /* 完全な円 */
-      overflow: hidden;       /* 円からはみ出る部分を隠す */
+      border-radius: 50%;
+      overflow: hidden;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -96,7 +94,7 @@
     .brand-logo img {
       width: 100%;
       height: 100%;
-      object-fit: cover;      /* 中央トリミングでまん丸 */
+      object-fit: cover;
       object-position: center;
       display: block;
     }
@@ -105,24 +103,23 @@
       font-size: 15px;
       font-weight: 700;
       letter-spacing: 0.6px;
-      white-space: nowrap;
     }
 
     .brand-text-sub {
       font-size: 11px;
       color: var(--text-muted);
-      white-space: nowrap;
     }
 
     .lang-select-wrap {
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: 4px;
-      background: rgba(15, 23, 42, 0.8);
+      background: rgba(15, 23, 42, 0.9);
       border-radius: 999px;
       padding: 3px 8px 3px 10px;
       border: 1px solid rgba(148, 163, 184, 0.4);
-      max-width: 220px;      /* 右にはみ出さないように制限 */
+      max-width: 52%;
+      justify-content: space-between;
       flex-shrink: 0;
     }
 
@@ -140,7 +137,7 @@
       padding: 3px 4px;
       outline: none;
       cursor: pointer;
-      max-width: 140px;      /* 文言が長い言語でもオーバーしにくく */
+      max-width: 100%;
     }
 
     main {
@@ -153,8 +150,9 @@
       margin-bottom: 4px;
     }
 
-    /* タイトル直下のメインバナー画像 */
-    .tsc-image-01 {
+    .tsc-image-01,
+    .tsc-image-02,
+    .tsc-image-03 {
       margin: 8px 0 10px;
       border-radius: 18px;
       overflow: hidden;
@@ -162,36 +160,8 @@
       background: #020617;
     }
 
-    .tsc-image-01 img {
-      display: block;
-      width: 100%;
-      height: auto;
-    }
-
-    /* Q2 内バナー */
-    .tsc-image-02 {
-      margin: 0 0 10px;
-      border-radius: 18px;
-      overflow: hidden;
-      border: 1px solid rgba(148, 163, 184, 0.25);
-      background: #020617;
-    }
-
-    .tsc-image-02 img {
-      display: block;
-      width: 100%;
-      height: auto;
-    }
-
-    /* Q3 内バナー */
-    .tsc-image-03 {
-      margin: 0 0 10px;
-      border-radius: 18px;
-      overflow: hidden;
-      border: 1px solid rgba(148, 163, 184, 0.25);
-      background: #020617;
-    }
-
+    .tsc-image-01 img,
+    .tsc-image-02 img,
     .tsc-image-03 img {
       display: block;
       width: 100%;
@@ -355,6 +325,26 @@
       box-shadow: 0 6px 14px rgba(37, 99, 235, 0.6);
     }
 
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 7px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.7);
+      background: rgba(15,23,42,0.95);
+      color: var(--text-main);
+      font-size: 12px;
+      text-decoration: none;
+      cursor: pointer;
+      gap: 6px;
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
     .submit-caption {
       font-size: 10px;
       color: var(--text-muted);
@@ -403,6 +393,15 @@
       padding: 6px 8px;
     }
 
+    .github-issue-box {
+      margin-top: 8px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(148,163,184,0.6);
+      background: rgba(15,23,42,0.85);
+      font-size: 11px;
+    }
+
     footer {
       margin-top: 10px;
       text-align: center;
@@ -414,6 +413,9 @@
       .card {
         padding: 20px 22px 24px;
       }
+      .lang-select-wrap {
+        max-width: 220px;
+      }
     }
   </style>
 </head>
@@ -424,7 +426,6 @@
         <header>
           <div class="brand">
             <div class="brand-logo">
-              <!-- ここに丸く切り抜いた webp -->
               <img src="tsc-banner-00.webp" alt="TSC Event Logo" />
             </div>
             <div>
@@ -442,9 +443,8 @@
         <main>
           <h1 data-i18n="app_title">TSC Event Survey - 2025.12</h1>
 
-          <!-- タイトル直下のメインバナー -->
           <div class="tsc-image-01">
-            <img src="tsc-banner-01.png" alt="TSC Banner 1" />
+            <img src="tsc-banner-01.png" alt="tsc-banner-01" />
           </div>
 
           <div class="subtitle">
@@ -482,11 +482,9 @@
             <!-- Q02 -->
             <div class="question">
               <div class="tsc-image-02">
-                <img src="tsc-banner-02.png" alt="TSC Banner 2" />
+                <img src="tsc-banner-02.png" alt="tsc-banner-02" />
               </div>
-              <div class="section-label" data-i18n="q02_section">
-                Polar Invasion / Wasteland Showdown, etc
-              </div>
+              <div class="section-label" data-i18n="q02_section">Polar Invasion / Wasteland Showdown, etc</div>
               <div class="question-header">
                 <div class="question-title" data-i18n="q02_title">
                   Please choose your first choice for the time slot.
@@ -525,7 +523,7 @@
             <!-- Q03 -->
             <div class="question">
               <div class="tsc-image-03">
-                <img src="tsc-banner-03.png" alt="TSC Banner 3" />
+                <img src="tsc-banner-03.png" alt="tsc-banner-03" />
               </div>
               <div class="section-label" data-i18n="q03_section">
                 Elite War / Doom Arena / Zombie Uprise, etc
@@ -658,12 +656,24 @@
               <div data-i18n="msg_success">Thank you for your submission!</div>
               <div style="margin-top:4px;">
                 Copy the CSV row below and paste it into your Excel sheet
-                (columns: timestamp, language, player_name, Q02_time, Q03_time, Q04_day).
+                (columns: timestamp, language, player_name, Q02_time, Q03_time, Q04_day),
+                or send it to GitHub as an Issue.
               </div>
             </div>
             <div class="csv-box">
               <div class="csv-title">CSV row (comma-separated):</div>
               <textarea id="csvOutput" readonly></textarea>
+            </div>
+
+            <div id="githubIssueBox" class="github-issue-box" style="display:none;">
+              <div style="margin-bottom:6px;">
+                GitHub にログインしている場合、下のボタンからこの回答を
+                <strong>Issue</strong> として保存できます。  
+                保存されると自動的に <code>responses.csv</code> に追記され、Excel 集計に反映されます。
+              </div>
+              <a id="githubIssueLink" class="btn-secondary" target="_blank" rel="noopener noreferrer">
+                Send to GitHub Issue
+              </a>
             </div>
           </div>
         </main>
@@ -676,11 +686,8 @@
   </div>
 
   <script>
-    // === CONFIG ===
-    // translations.tsv を読み込んで UI テキストを切り替える
     const TRANSLATION_FILE = "translations.tsv";
 
-    // 言語コード → 表示名
     const LANGUAGE_LABELS = {
       "en": "English",
       "de": "Deutsch (German)",
@@ -691,7 +698,6 @@
       "pt": "Português (Portuguese)",
       "it": "Italiano (Italian)",
       "zh-Hans": "简体中文 (Simplified Chinese)",
-      "zh-Hant": "繁體中文 (Traditional Chinese)",
       "ja": "日本語 (Japanese)",
       "ko": "한국어 (Korean)",
       "ar": "العربية (Arabic)",
@@ -759,9 +765,7 @@
         const opt = document.createElement("option");
         opt.value = code;
         opt.textContent = LANGUAGE_LABELS[code] || code;
-        if (code === currentLang) {
-          opt.selected = true;
-        }
+        if (code === currentLang) opt.selected = true;
         select.appendChild(opt);
       });
 
@@ -857,12 +861,22 @@
       const output = document.getElementById("csvOutput");
       output.value = csvRow;
 
+      // GitHub Issue 用リンク生成
+      const issueBase =
+        "https://github.com/aoz-jcf-1165/TSC-event-survey-web-2025.12/issues/new";
+      const title = encodeURIComponent("[response] TSC Event Survey");
+      const body  = encodeURIComponent(csvRow);
+      const url   = `${issueBase}?title=${title}&body=${body}`;
+
+      const link = document.getElementById("githubIssueLink");
+      link.href = url;
+      document.getElementById("githubIssueBox").style.display = "block";
+
       document.getElementById("result").style.display = "block";
     }
 
     document.getElementById("surveyForm").addEventListener("submit", handleSubmit);
 
-    // 初期ロード
     loadTranslations();
   </script>
 </body>
