@@ -1,0 +1,59 @@
+name: Collect survey responses
+
+on:
+  # 後でフロント側から repository_dispatch を投げる
+  repository_dispatch:
+    types: [survey_response]
+
+permissions:
+  contents: write
+
+jobs:
+  append-response:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Append response to CSV
+        run: |
+          set -e
+          RESP_FILE="responses.csv"
+
+          TS="${{ github.event.client_payload.timestamp }}"
+          LANG="${{ github.event.client_payload.language }}"
+          PLAYER="${{ github.event.client_payload.player_name }}"
+          Q02="${{ github.event.client_payload.Q02_time }}"
+          Q03="${{ github.event.client_payload.Q03_time }}"
+          Q04="${{ github.event.client_payload.Q04_day }}"
+
+          # 初回はヘッダー行を作成
+          if [ ! -f "$RESP_FILE" ]; then
+            echo "timestamp,language,player_name,Q02_time,Q03_time,Q04_day" > "$RESP_FILE"
+          fi
+
+          # プレイヤー名に「"」や「,」が入った時用の簡易エスケープ
+          SAFE_PLAYER="${PLAYER//\"/\"\"}"
+          if [[ "$SAFE_PLAYER" == *","* ]]; then
+            SAFE_PLAYER="\"$SAFE_PLAYER\""
+          fi
+
+          echo "$TS,$LANG,$SAFE_PLAYER,$Q02,$Q03,$Q04" >> "$RESP_FILE"
+
+      - name: Commit and push CSV
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git diff --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+
+          git add responses.csv
+          git commit -m "Add survey response [skip ci]"
+          git push
