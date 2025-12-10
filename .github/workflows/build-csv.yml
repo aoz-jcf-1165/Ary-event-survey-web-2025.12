@@ -13,6 +13,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: Install GitHub CLI & jq
+        run: |
+          sudo apt update
+          sudo apt install -y jq
+          type -p gh >/dev/null || curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+          sudo apt install -y gh
+
       - name: Read GitHub Issues and generate CSV
         id: generate_csv
         run: |
