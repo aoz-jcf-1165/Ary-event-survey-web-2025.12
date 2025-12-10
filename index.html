@@ -88,7 +88,6 @@
       align-items: center;
       justify-content: center;
       background: #fff;
-      flex-shrink: 0;
     }
 
     .brand-logo img {
@@ -114,19 +113,18 @@
       display: inline-flex;
       align-items: center;
       gap: 4px;
-      background: rgba(15, 23, 42, 0.9);
+      background: rgba(15, 23, 42, 0.8);
       border-radius: 999px;
-      padding: 3px 8px 3px 10px;
+      padding: 3px 10px;
       border: 1px solid rgba(148, 163, 184, 0.4);
-      max-width: 52%;
+      max-width: 46%;
       justify-content: space-between;
-      flex-shrink: 0;
+      white-space: nowrap;
     }
 
     .lang-select-wrap span {
       font-size: 11px;
       color: var(--text-muted);
-      white-space: nowrap;
     }
 
     select {
@@ -134,10 +132,10 @@
       border: none;
       color: var(--text-main);
       font-size: 12px;
-      padding: 3px 4px;
+      padding: 3px 0 3px 4px;
       outline: none;
       cursor: pointer;
-      max-width: 100%;
+      max-width: 70%;
     }
 
     main {
@@ -148,11 +146,11 @@
       font-size: 18px;
       margin: 0;
       margin-bottom: 4px;
+      word-break: keep-all;
     }
 
-    .tsc-image-01,
-    .tsc-image-02,
-    .tsc-image-03 {
+    /* 画面上部のメインバナー */
+    .tsc-image-01 {
       margin: 8px 0 10px;
       border-radius: 18px;
       overflow: hidden;
@@ -160,8 +158,36 @@
       background: #020617;
     }
 
-    .tsc-image-01 img,
-    .tsc-image-02 img,
+    .tsc-image-01 img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    /* Q02 用バナー */
+    .tsc-image-02 {
+      margin: 0 0 10px;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      background: #020617;
+    }
+
+    .tsc-image-02 img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    /* Q03 用バナー */
+    .tsc-image-03 {
+      margin: 0 0 10px;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      background: #020617;
+    }
+
     .tsc-image-03 img {
       display: block;
       width: 100%;
@@ -325,26 +351,6 @@
       box-shadow: 0 6px 14px rgba(37, 99, 235, 0.6);
     }
 
-    .btn-secondary {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 7px 12px;
-      border-radius: 999px;
-      border: 1px solid rgba(148,163,184,0.7);
-      background: rgba(15,23,42,0.95);
-      color: var(--text-main);
-      font-size: 12px;
-      text-decoration: none;
-      cursor: pointer;
-      gap: 6px;
-    }
-
-    .btn-secondary:hover {
-      border-color: var(--accent);
-      color: var(--accent);
-    }
-
     .submit-caption {
       font-size: 10px;
       color: var(--text-muted);
@@ -393,15 +399,6 @@
       padding: 6px 8px;
     }
 
-    .github-issue-box {
-      margin-top: 8px;
-      padding: 8px 10px;
-      border-radius: 12px;
-      border: 1px solid rgba(148,163,184,0.6);
-      background: rgba(15,23,42,0.85);
-      font-size: 11px;
-    }
-
     footer {
       margin-top: 10px;
       text-align: center;
@@ -412,9 +409,6 @@
     @media (min-width: 640px) {
       .card {
         padding: 20px 22px 24px;
-      }
-      .lang-select-wrap {
-        max-width: 220px;
       }
     }
   </style>
@@ -459,7 +453,7 @@
           </div>
 
           <form id="surveyForm">
-            <!-- Q01 -->
+            <!-- Q01: Player name -->
             <div class="question">
               <div class="question-header">
                 <div class="question-title" data-i18n="q01_title">
@@ -484,7 +478,9 @@
               <div class="tsc-image-02">
                 <img src="tsc-banner-02.png" alt="tsc-banner-02" />
               </div>
-              <div class="section-label" data-i18n="q02_section">Polar Invasion / Wasteland Showdown, etc</div>
+              <div class="section-label" data-i18n="q02_section">
+                Polar Invasion / Wasteland Showdown, etc
+              </div>
               <div class="question-header">
                 <div class="question-title" data-i18n="q02_title">
                   Please choose your first choice for the time slot.
@@ -656,24 +652,12 @@
               <div data-i18n="msg_success">Thank you for your submission!</div>
               <div style="margin-top:4px;">
                 Copy the CSV row below and paste it into your Excel sheet
-                (columns: timestamp, language, player_name, Q02_time, Q03_time, Q04_day),
-                or send it to GitHub as an Issue.
+                (columns: timestamp, language, player_name, Q02_time, Q03_time, Q04_day).
               </div>
             </div>
             <div class="csv-box">
               <div class="csv-title">CSV row (comma-separated):</div>
               <textarea id="csvOutput" readonly></textarea>
-            </div>
-
-            <div id="githubIssueBox" class="github-issue-box" style="display:none;">
-              <div style="margin-bottom:6px;">
-                GitHub にログインしている場合、下のボタンからこの回答を
-                <strong>Issue</strong> として保存できます。  
-                保存されると自動的に <code>responses.csv</code> に追記され、Excel 集計に反映されます。
-              </div>
-              <a id="githubIssueLink" class="btn-secondary" target="_blank" rel="noopener noreferrer">
-                Send to GitHub Issue
-              </a>
             </div>
           </div>
         </main>
@@ -686,6 +670,7 @@
   </div>
 
   <script>
+    // === CONFIG ===
     const TRANSLATION_FILE = "translations.tsv";
 
     const LANGUAGE_LABELS = {
@@ -745,12 +730,12 @@
       document.documentElement.dir = (lang === "ar") ? "rtl" : "ltr";
 
       document.querySelectorAll("[data-i18n]").forEach(el => {
-        const key = el.dataset.i18n;
-        el.textContent = t(key);
+        const k = el.dataset.i18n;
+        el.textContent = t(k);
       });
       document.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
-        const key = el.dataset.i18nPlaceholder;
-        el.placeholder = t(key);
+        const k = el.dataset.i18nPlaceholder;
+        el.placeholder = t(k);
       });
     }
 
@@ -765,7 +750,9 @@
         const opt = document.createElement("option");
         opt.value = code;
         opt.textContent = LANGUAGE_LABELS[code] || code;
-        if (code === currentLang) opt.selected = true;
+        if (code === currentLang) {
+          opt.selected = true;
+        }
         select.appendChild(opt);
       });
 
@@ -807,8 +794,10 @@
       }
     }
 
-    function handleSubmit(e) {
+    // === Cloudflare Worker に送信する新しい handleSubmit ===
+    async function handleSubmit(e) {
       e.preventDefault();
+
       setError("form-error", "");
       setError("error-playerName", "");
       setError("error-q02", "");
@@ -821,6 +810,7 @@
       const q04 = getRadioValue("q04");
 
       let hasError = false;
+
       if (!playerName) {
         setError("error-playerName", "Required / 必須です");
         hasError = true;
@@ -837,11 +827,11 @@
         setError("error-q04", "Please select one option.");
         hasError = true;
       }
+
       if (hasError) return;
 
-      const timestamp = new Date().toISOString();
-      const row = {
-        timestamp,
+      const payload = {
+        timestamp: new Date().toISOString(),
         language: currentLang,
         player_name: playerName,
         Q02_time: q02,
@@ -849,30 +839,39 @@
         Q04_day: q04
       };
 
-      const headers = ["timestamp","language","player_name","Q02_time","Q03_time","Q04_day"];
-      const csvRow = headers.map(h => {
-        const v = row[h] ?? "";
-        if (/[",]/.test(v)) {
-          return `"${String(v).replace(/"/g, '""')}"`;
+      try {
+        const response = await fetch("https://tsc-survey-api.aozjakz01.workers.dev/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          const err = await response.text();
+          console.error("Worker error:", err);
+          setError("form-error", "Server error. Please try again.");
+          return;
         }
-        return v;
-      }).join(",");
 
-      const output = document.getElementById("csvOutput");
-      output.value = csvRow;
+        // Worker 側で GitHub Issue が作成された前提で、画面側は CSV を表示
+        document.getElementById("result").style.display = "block";
 
-      // GitHub Issue 用リンク生成
-      const issueBase =
-        "https://github.com/aoz-jcf-1165/TSC-event-survey-web-2025.12/issues/new";
-      const title = encodeURIComponent("[response] TSC Event Survey");
-      const body  = encodeURIComponent(csvRow);
-      const url   = `${issueBase}?title=${title}&body=${body}`;
+        const output = document.getElementById("csvOutput");
+        const csvRow = [
+          payload.timestamp,
+          payload.language,
+          payload.player_name,
+          payload.Q02_time,
+          payload.Q03_time,
+          payload.Q04_day
+        ].join(",");
 
-      const link = document.getElementById("githubIssueLink");
-      link.href = url;
-      document.getElementById("githubIssueBox").style.display = "block";
+        output.value = csvRow;
 
-      document.getElementById("result").style.display = "block";
+      } catch (err) {
+        console.error("Network error:", err);
+        setError("form-error", "Network error. Please try again.");
+      }
     }
 
     document.getElementById("surveyForm").addEventListener("submit", handleSubmit);
