@@ -5,41 +5,118 @@ on:
     types: [opened]
 
 jobs:
-  append-response:
-    # タイトルが [response] で始まる Issue だけ処理
-    if: startsWith(github.event.issue.title, '[response]')
+  collect:
+    # 「Survey response from:」で始まる Issue だけ処理
+    if: startsWith(github.event.issue.title, 'Survey response from:')
     runs-on: ubuntu-latest
+
+    # CSV への書き込みは常に 1 本だけが動くようにする（競合防止）
+    concurrency:
+      group: survey-csv
+      cancel-in-progress: false
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Extract CSV line from issue body
-        id: extract
+      - name: Ensure data directory exists
+        run: mkdir -p data
+
+      - name: Build CSV row from issue body
+        id: build_row
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const body = context.payload.issue.body || '';
+
+            // Markdown テーブルをパース
+            const lines = body.split(/\r?\n/);
+            const map = {};
+
+            for (const line of lines) {
+              // 例: "| timestamp | 2025-12-10T12:34:56Z |"
+              const m = line.match(/^\s*\|\s*([^|]+?)\s*\|\s*(.*?)\s*\|\s*$/);
+              if (m) {
+                const key = m[1].trim();
+                const value = m[2].trim();
+                map[key] = value;
+              }
+            }
+
+            function escapeCSV(value) {
+              if (value == null) return '';
+              const s = String(value);
+              if (/[",\n]/.test(s)) {
+                return `"${s.replace(/"/g, '""')}"`;
+              }
+              return s;
+            }
+
+            // Worker 側で出力しているキー名をここで対応付け
+            const rowObject = {
+              timestamp: map['timestamp'] || '',
+              language: map['language'] || '',
+              player_name: map['player_name'] || '',
+              Q2_time: map['Q2_time'] || map['Q02_time'] || '',
+              Q3_time: map['Q3_time'] || map['Q03_time'] || '',
+              Q4_day: map['Q4_day'] || map['Q04_day'] || '',
+            };
+
+            const headers = [
+              'timestamp',
+              'language',
+              'player_name',
+              'Q2_time',
+              'Q3_time',
+              'Q4_day',
+            ];
+
+            const row = headers
+              .map((h) => escapeCSV(rowObject[h]))
+              .join(',');
+
+            // row が全て空ならスキップさせるためのフラグ
+            const hasValue = Object.values(rowObject).some((v) => (v || '') !== '');
+
+            core.setOutput('header', headers.join(','));
+            core.setOutput('row', row);
+            core.setOutput('has_value', hasValue ? 'true' : 'false');
+
+      - name: Append row to data/survey.csv
+        if: steps.build_row.outputs.has_value == 'true'
         run: |
-          body="${{ github.event.issue.body }}"
-          # body の 1 行目を CSV として使う
-          csv_line="$(printf '%s\n' "$body" | head -n 1 | tr -d '\r')"
-          echo "csv_line=$csv_line" >> "$GITHUB_OUTPUT"
+          FILE="data/survey.csv"
 
-      - name: Append to responses.csv
-        if: steps.extract.outputs.csv_line != ''
-        run: |
-          line="${{ steps.extract.outputs.csv_line }}"
-          file="responses.csv"
-
-          # ヘッダーが無ければ作成
-          if [ ! -f "$file" ]; then
-            echo "timestamp,language,player_name,Q02_time,Q03_time,Q04_day" > "$file"
+          # ファイルがまだ無ければヘッダーを書き込む
+          if [ ! -f "$FILE" ]; then
+            echo "${{ steps.build_row.outputs.header }}" > "$FILE"
           fi
 
-          echo "$line" >> "$file"
+          # 1 行追記
+          echo "${{ steps.build_row.outputs.row }}" >> "$FILE"
 
-      - name: Commit and push
-        if: steps.extract.outputs.csv_line != ''
+      - name: Commit and push CSV
+        if: steps.build_row.outputs.has_value == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ github.event.repository.default_branch }}
         run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add responses.csv
-          git commit -m "Add survey response from issue #${{ github.event.issue.number }}" || exit 0
-          git push
+          git config user.name "${GITHUB_ACTOR}"
+          git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+
+          git add data/survey.csv
+
+          # 変更がなければ何もしない
+          if git diff --cached --quiet; then
+            echo "No CSV changes to commit."
+            exit 0
+          fi
+
+          git commit -m "Append survey response from issue #${{ github.event.issue.number }}"
+
+          # 念のため最新を取り込んでから push（競合対策）
+          git pull --rebase origin "$BRANCH" || true
+          git push origin HEAD:"$BRANCH"
