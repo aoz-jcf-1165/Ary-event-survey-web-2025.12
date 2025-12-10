@@ -79,19 +79,22 @@
       gap: 8px;
     }
 
-    .brand-logo {
+     .brand-logo {
       width: 32px;
       height: 32px;
       border-radius: 999px;
-      background: radial-gradient(circle at 30% 0, #38bdf8, #475569);
+      overflow: hidden;              /* 中の画像を丸く切り抜き */
       box-shadow: 0 0 18px rgba(56, 189, 248, 0.7);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #0b1120;
-      font-weight: 800;
-      font-size: 18px;
+      display: inline-flex;
     }
+
+    .brand-logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;             /* いい感じにトリミング */
+      display: block;
+    }
+
 
     .brand-text-main {
       font-size: 15px;
@@ -407,12 +410,15 @@
       <div class="card-inner">
         <header>
           <div class="brand">
-            <div class="brand-logo">T</div>
+            <div class="brand-logo">
+              <img src="tsc-banner-00.png" alt="TSC Event Logo" />
+            </div>
             <div>
               <div class="brand-text-main">TSC EVENT</div>
               <div class="brand-text-sub">Multilingual Survey Form</div>
             </div>
           </div>
+
           <div class="lang-select-wrap">
             <span>Lang</span>
             <select id="languageSelect"></select>
