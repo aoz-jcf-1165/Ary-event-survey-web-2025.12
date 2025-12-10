@@ -728,106 +728,123 @@
       });
     }
 
-    async function loadTranslations() {
-      try {
-        const res = await fetch(TRANSLATION_FILE);
-        if (!res.ok) {
-          console.error("Failed to load translations.tsv");
-          return;
-        }
-        const text = await res.text();
-        parseTSV(text);
-        populateLanguageSelect();
-        applyLanguage(currentLang);
-      } catch (e) {
-        console.error("Error loading translations:", e);
-      }
+    // エラーメッセージ表示用の小さなヘルパー（既にあればそれを使ってOK）
+function setError(id, msg) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (msg) {
+    el.textContent = msg;
+    el.style.display = "block";
+  } else {
+    el.textContent = "";
+    el.style.display = "none";
+  }
+}
+
+async function handleSubmit(e) {
+  e.preventDefault();
+
+  // 既存のエラーをクリア
+  setError("form-error", "");
+  setError("error-playerName", "");
+  setError("error-q02", "");
+  setError("error-q03", "");
+  setError("error-q04", "");
+
+  // 入力値の取得
+  const playerName = document.getElementById("playerName").value.trim();
+  const q02 = getRadioValue("q02");
+  const q03 = getRadioValue("q03");
+  const q04 = getRadioValue("q04");
+
+  let hasError = false;
+  if (!playerName) {
+    setError("error-playerName", "Required / 必須です");
+    hasError = true;
+  }
+  if (!q02) {
+    setError("error-q02", "Please select one option.");
+    hasError = true;
+  }
+  if (!q03) {
+    setError("error-q03", "Please select one option.");
+    hasError = true;
+  }
+  if (!q04) {
+    setError("error-q04", "Please select one option.");
+    hasError = true;
+  }
+  if (hasError) return;
+
+  const timestamp = new Date().toISOString();
+
+  const payload = {
+    timestamp,
+    language: currentLang,
+    player_name: playerName,
+    Q02_time: q02,
+    Q03_time: q03,
+    Q04_day: q04
+  };
+
+  try {
+    const res = await fetch("https://tsc-survey-api.aozjkaz01.workers.dev/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    let data = null;
+    try {
+      data = await res.json();
+    } catch (e) {
+      // JSON で返ってこなかったとき
     }
 
-    function getRadioValue(name) {
-      const node = document.querySelector(`input[name="${name}"]:checked`);
-      return node ? node.value : "";
+    // Worker 側は「GitHub に失敗しても 200 を返す」ようにしている
+    if (!data || data.ok !== true) {
+      const msgParts = [];
+
+      if (data && data.error) msgParts.push(data.error);
+      if (data && data.status) msgParts.push(`status ${data.status}`);
+      if (data && data.stage) msgParts.push(`stage=${data.stage}`);
+
+      if (data && data.raw) {
+        msgParts.push(`raw: ${data.raw.substring(0, 200)}…`);
+      }
+
+      const msg = msgParts.length
+        ? msgParts.join(" / ")
+        : `Request failed (HTTP ${res.status})`;
+
+      setError("form-error", msg);
+      return;
     }
 
-    function setError(id, msg) {
-      const el = document.getElementById(id);
-      if (!el) return;
-      if (msg) {
-        el.textContent = msg;
-        el.style.display = "block";
-      } else {
-        el.textContent = "";
-        el.style.display = "none";
-      }
+    // === 成功時 ===
+    // 既存のサクセスメッセージ + Issue へのリンクを表示
+    document.getElementById("result").style.display = "block";
+
+    const successBox = document.querySelector("#result .success-box");
+    if (successBox && data.issue_url) {
+      const extra = document.createElement("div");
+      extra.style.marginTop = "4px";
+      extra.innerHTML =
+        `GitHub Issue created: <a href="${data.issue_url}" target="_blank" rel="noopener">#${data.issue_number}</a>`;
+      successBox.appendChild(extra);
     }
+  } catch (err) {
+    setError("form-error", "Network error: " + err.message);
+  }
+}
 
-    async function handleSubmit(e) {
-      e.preventDefault();
-      setError("form-error", "");
-      setError("error-playerName", "");
-      setError("error-q02", "");
-      setError("error-q03", "");
-      setError("error-q04", "");
+// 既存の submit イベント登録はこれで OK
+document
+  .getElementById("surveyForm")
+  .addEventListener("submit", handleSubmit);
 
-      const playerName = document.getElementById("playerName").value.trim();
-      const q02 = getRadioValue("q02");
-      const q03 = getRadioValue("q03");
-      const q04 = getRadioValue("q04");
-
-      let hasError = false;
-      if (!playerName) {
-        setError("error-playerName", "Required / 必須です");
-        hasError = true;
-      }
-      if (!q02) {
-        setError("error-q02", "Please select one option.");
-        hasError = true;
-      }
-      if (!q03) {
-        setError("error-q03", "Please select one option.");
-        hasError = true;
-      }
-      if (!q04) {
-        setError("error-q04", "Please select one option.");
-        hasError = true;
-      }
-      if (hasError) return;
-
-      const timestamp = new Date().toISOString();
-      const payload = {
-        timestamp,
-        language: currentLang,
-        player_name: playerName,
-        Q02_time: q02,
-        Q03_time: q03,
-        Q04_day: q04
-      };
-
-      try {
-        const res = await fetch("https://tsc-survey-api.aozjkaz01.workers.dev/", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(payload)
-        });
-
-        if (!res.ok) {
-          const text = await res.text();
-          console.error("Worker error:", text);
-          setError("form-error", "Failed to send to server. Please try again later.");
-          return;
-        }
-
-        // OK
-        document.getElementById("result").style.display = "block";
-      } catch (err) {
-        console.error("Network error:", err);
-        setError("form-error", "Network error. Please try again.");
-      }
-    }
-
-    document.getElementById("surveyForm").addEventListener("submit", handleSubmit);
 
     loadTranslations();
   </script>
