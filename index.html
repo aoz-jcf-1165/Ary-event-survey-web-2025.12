@@ -139,6 +139,21 @@
       margin-bottom: 4px;
     }
 
+    /* ★ 追加：タイトル直下の画像エリア */
+    .hero-image {
+      margin: 8px 0 10px;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      background: #020617;
+    }
+
+    .hero-image img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
     .subtitle {
       font-size: 12px;
       color: var(--text-muted);
@@ -378,6 +393,12 @@
 
         <main>
           <h1 data-i18n="app_title">TSC Event Survey - 2025.12</h1>
+
+          <!-- ★ タイトル直下の画像エリア -->
+          <div class="hero-image">
+            <img src="tsc-banner-02.png" alt="TSC Event Survey Banner" />
+          </div>
+
           <div class="subtitle">
             <span data-i18n="note_schedule">
               This survey aims to collect your preferred and available time slots for the event, and to help improve and maintain our team’s overall online participation rate. Thank you for your cooperation.
@@ -389,6 +410,7 @@
             <span>Multi-language UI — answers saved in English codes (A/B/C…)</span>
           </div>
 
+          <!-- ここから下は元のフォームと同じ -->
           <form id="surveyForm">
             <!-- Q01 -->
             <div class="question">
@@ -600,10 +622,8 @@
 
   <script>
     // === CONFIG ===
-    // translations.tsv を読み込んで UI テキストを切り替える
     const TRANSLATION_FILE = "translations.tsv";
 
-    // 言語コード → 表示名
     const LANGUAGE_LABELS = {
       "en": "English",
       "de": "Deutsch (German)",
@@ -633,7 +653,6 @@
       const lines = text.split(/\r?\n/).filter(l => l.trim() !== "");
       if (lines.length < 2) return;
       const headerCols = lines[0].split("\t");
-      // key, en, de, ...
       const langs = headerCols.slice(1);
       availableLangs = langs;
 
@@ -675,7 +694,6 @@
       const select = document.getElementById("languageSelect");
       select.innerHTML = "";
 
-      // en を先頭に、その後は availableLangs から
       const ordered = ["en", ...availableLangs.filter(l => l !== "en")];
 
       ordered.forEach(code => {
@@ -772,7 +790,6 @@
       const headers = ["timestamp","language","player_name","Q02_time","Q03_time","Q04_day"];
       const csvRow = headers.map(h => {
         const v = row[h] ?? "";
-        // 簡易: カンマやダブルクォート対策
         if (/[",]/.test(v)) {
           return `"${String(v).replace(/"/g, '""')}"`;
         }
@@ -783,13 +800,10 @@
       output.value = csvRow;
 
       document.getElementById("result").style.display = "block";
-      // 必要ならここでフォームをリセット:
-      // document.getElementById("surveyForm").reset();
     }
 
     document.getElementById("surveyForm").addEventListener("submit", handleSubmit);
 
-    // 初期ロード
     loadTranslations();
   </script>
 </body>
