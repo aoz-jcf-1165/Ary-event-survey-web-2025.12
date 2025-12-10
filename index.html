@@ -637,216 +637,253 @@
   </div>
 
   <script>
-    // === CONFIG ===
-    const TRANSLATION_FILE = "translations.tsv";
+  // ==== Cloudflare Worker API エンドポイント ====
+  // ★ここは必ず、ご自身の Workers.dev URL にします
+  const API_URL = "https://tsc-survey-api.aozjkaz01.workers.dev/";
 
-    const LANGUAGE_LABELS = {
-      "en": "English",
-      "de": "Deutsch (German)",
-      "nl": "Nederlands (Dutch)",
-      "fr": "Français (French)",
-      "ru": "Русский (Russian)",
-      "es": "Español (Spanish)",
-      "pt": "Português (Portuguese)",
-      "it": "Italiano (Italian)",
-      "zh-Hans": "简体中文 (Simplified Chinese)",
-      "ja": "日本語 (Japanese)",
-      "ko": "한국어 (Korean)",
-      "ar": "العربية (Arabic)",
-      "th": "ไทย (Thai)",
-      "vi": "Tiếng Việt (Vietnamese)",
-      "tr": "Türkçe (Turkish)",
-      "pl": "Polski (Polish)",
-      "ms": "Bahasa Melayu (Malay)",
-      "id": "Bahasa Indonesia (Indonesian)"
-    };
+  // ==== 多言語翻訳設定 ====
+  const TRANSLATION_FILE = "translations.tsv";
 
-    let translations = {};
-    let availableLangs = [];
-    let currentLang = "en";
-
-    function parseTSV(text) {
-      const lines = text.split(/\r?\n/).filter(l => l.trim() !== "");
-      if (lines.length < 2) return;
-      const headerCols = lines[0].split("\t");
-      const langs = headerCols.slice(1);
-      availableLangs = langs;
-
-      const data = {};
-      for (let i = 1; i < lines.length; i++) {
-        const cols = lines[i].split("\t");
-        const key = cols[0];
-        if (!key) continue;
-        data[key] = {};
-        langs.forEach((lang, idx) => {
-          data[key][lang] = cols[idx + 1] || "";
-        });
-      }
-      translations = data;
-    }
-
-    function t(key) {
-      const entry = translations[key];
-      if (!entry) return key;
-      return entry[currentLang] || entry["en"] || key;
-    }
-
-    function applyLanguage(lang) {
-      currentLang = lang;
-      document.documentElement.lang = lang;
-      document.documentElement.dir = (lang === "ar") ? "rtl" : "ltr";
-
-      document.querySelectorAll("[data-i18n]").forEach(el => {
-        const key = el.dataset.i18n;
-        el.textContent = t(key);
-      });
-      document.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
-        const key = el.dataset.i18nPlaceholder;
-        el.placeholder = t(key);
-      });
-    }
-
-    function populateLanguageSelect() {
-      const select = document.getElementById("languageSelect");
-      select.innerHTML = "";
-
-      const ordered = ["en", ...availableLangs.filter(l => l !== "en")];
-
-      ordered.forEach(code => {
-        if (!availableLangs.includes(code)) return;
-        const opt = document.createElement("option");
-        opt.value = code;
-        opt.textContent = LANGUAGE_LABELS[code] || code;
-        if (code === currentLang) {
-          opt.selected = true;
-        }
-        select.appendChild(opt);
-      });
-
-      select.addEventListener("change", () => {
-        applyLanguage(select.value);
-      });
-    }
-
-    // エラーメッセージ表示用の小さなヘルパー（既にあればそれを使ってOK）
-function setError(id, msg) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  if (msg) {
-    el.textContent = msg;
-    el.style.display = "block";
-  } else {
-    el.textContent = "";
-    el.style.display = "none";
-  }
-}
-
-async function handleSubmit(e) {
-  e.preventDefault();
-
-  // 既存のエラーをクリア
-  setError("form-error", "");
-  setError("error-playerName", "");
-  setError("error-q02", "");
-  setError("error-q03", "");
-  setError("error-q04", "");
-
-  // 入力値の取得
-  const playerName = document.getElementById("playerName").value.trim();
-  const q02 = getRadioValue("q02");
-  const q03 = getRadioValue("q03");
-  const q04 = getRadioValue("q04");
-
-  let hasError = false;
-  if (!playerName) {
-    setError("error-playerName", "Required / 必須です");
-    hasError = true;
-  }
-  if (!q02) {
-    setError("error-q02", "Please select one option.");
-    hasError = true;
-  }
-  if (!q03) {
-    setError("error-q03", "Please select one option.");
-    hasError = true;
-  }
-  if (!q04) {
-    setError("error-q04", "Please select one option.");
-    hasError = true;
-  }
-  if (hasError) return;
-
-  const timestamp = new Date().toISOString();
-
-  const payload = {
-    timestamp,
-    language: currentLang,
-    player_name: playerName,
-    Q02_time: q02,
-    Q03_time: q03,
-    Q04_day: q04
+  const LANGUAGE_LABELS = {
+    "en": "English",
+    "de": "Deutsch (German)",
+    "nl": "Nederlands (Dutch)",
+    "fr": "Français (French)",
+    "ru": "Русский (Russian)",
+    "es": "Español (Spanish)",
+    "pt": "Português (Portuguese)",
+    "it": "Italiano (Italian)",
+    "zh-Hans": "简体中文 (Simplified Chinese)",
+    "ja": "日本語 (Japanese)",
+    "ko": "한국어 (Korean)",
+    "ar": "العربية (Arabic)",
+    "th": "ไทย (Thai)",
+    "vi": "Tiếng Việt (Vietnamese)",
+    "tr": "Türkçe (Turkish)",
+    "pl": "Polski (Polish)",
+    "ms": "Bahasa Melayu (Malay)",
+    "id": "Bahasa Indonesia (Indonesian)"
   };
 
-  try {
-    const res = await fetch("https://tsc-survey-api.aozjkaz01.workers.dev/", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(payload)
+  let translations = {};
+  let availableLangs = [];
+  let currentLang = "en";
+
+  function parseTSV(text) {
+    const lines = text.split(/\r?\n/).filter(l => l.trim() !== "");
+    if (lines.length < 2) return;
+    const headerCols = lines[0].split("\t");
+    const langs = headerCols.slice(1);
+    availableLangs = langs;
+
+    const data = {};
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split("\t");
+      const key = cols[0];
+      if (!key) continue;
+      data[key] = {};
+      langs.forEach((lang, idx) => {
+        data[key][lang] = cols[idx + 1] || "";
+      });
+    }
+    translations = data;
+  }
+
+  function t(key) {
+    const entry = translations[key];
+    if (!entry) return key;
+    return entry[currentLang] || entry["en"] || key;
+  }
+
+  function applyLanguage(lang) {
+    currentLang = lang;
+    document.documentElement.lang = lang;
+    document.documentElement.dir = (lang === "ar") ? "rtl" : "ltr";
+
+    document.querySelectorAll("[data-i18n]").forEach(el => {
+      const key = el.dataset.i18n;
+      el.textContent = t(key);
+    });
+    document.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
+      const key = el.dataset.i18nPlaceholder;
+      el.placeholder = t(key);
+    });
+  }
+
+  function populateLanguageSelect() {
+    const select = document.getElementById("languageSelect");
+    if (!select) return;
+    select.innerHTML = "";
+
+    const ordered = ["en", ...availableLangs.filter(l => l !== "en")];
+
+    ordered.forEach(code => {
+      if (!availableLangs.includes(code)) return;
+      const opt = document.createElement("option");
+      opt.value = code;
+      opt.textContent = LANGUAGE_LABELS[code] || code;
+      if (code === currentLang) opt.selected = true;
+      select.appendChild(opt);
     });
 
-    let data = null;
+    select.addEventListener("change", () => {
+      applyLanguage(select.value);
+    });
+  }
+
+  async function loadTranslations() {
     try {
-      data = await res.json();
+      const res = await fetch(TRANSLATION_FILE);
+      if (!res.ok) {
+        console.error("Failed to load translations.tsv");
+        return;
+      }
+      const text = await res.text();
+      parseTSV(text);
+      populateLanguageSelect();
+      applyLanguage(currentLang);
     } catch (e) {
-      // JSON で返ってこなかったとき
+      console.error("Error loading translations:", e);
     }
+  }
 
-    // Worker 側は「GitHub に失敗しても 200 を返す」ようにしている
-    if (!data || data.ok !== true) {
-      const msgParts = [];
+  // ==== フォーム送信まわり ====
 
-      if (data && data.error) msgParts.push(data.error);
-      if (data && data.status) msgParts.push(`status ${data.status}`);
-      if (data && data.stage) msgParts.push(`stage=${data.stage}`);
+  function getRadioValue(name) {
+    const node = document.querySelector(`input[name="${name}"]:checked`);
+    return node ? node.value : "";
+  }
 
-      if (data && data.raw) {
-        msgParts.push(`raw: ${data.raw.substring(0, 200)}…`);
+  function setError(id, msg) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (msg) {
+      el.textContent = msg;
+      el.style.display = "block";
+    } else {
+      el.textContent = "";
+      el.style.display = "none";
+    }
+  }
+
+  function setFormDisabled(disabled) {
+    const form = document.getElementById("surveyForm");
+    if (!form) return;
+    Array.from(form.elements).forEach(el => {
+      if (el.tagName === "BUTTON" || el.tagName === "INPUT" || el.tagName === "SELECT" || el.tagName === "TEXTAREA") {
+        el.disabled = disabled;
+      }
+    });
+  }
+
+  function encodeCsvRow(rowObj) {
+    const headers = ["timestamp", "language", "player_name", "Q02_time", "Q03_time", "Q04_day"];
+    return headers.map(h => {
+      const v = rowObj[h] ?? "";
+      if (/[",]/.test(v)) {
+        return `"${String(v).replace(/"/g, '""')}"`;
+      }
+      return v;
+    }).join(",");
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+
+    // エラー表示クリア
+    setError("form-error", "");
+    setError("error-playerName", "");
+    setError("error-q02", "");
+    setError("error-q03", "");
+    setError("error-q04", "");
+
+    const playerName = document.getElementById("playerName").value.trim();
+    const q02 = getRadioValue("q02");
+    const q03 = getRadioValue("q03");
+    const q04 = getRadioValue("q04");
+
+    let hasError = false;
+    if (!playerName) {
+      setError("error-playerName", "Required / 必須です");
+      hasError = true;
+    }
+    if (!q02) {
+      setError("error-q02", "Please select one option.");
+      hasError = true;
+    }
+    if (!q03) {
+      setError("error-q03", "Please select one option.");
+      hasError = true;
+    }
+    if (!q04) {
+      setError("error-q04", "Please select one option.");
+      hasError = true;
+    }
+    if (hasError) return;
+
+    const timestamp = new Date().toISOString();
+    const row = {
+      timestamp,
+      language: currentLang,
+      player_name: playerName,
+      Q02_time: q02,
+      Q03_time: q03,
+      Q04_day: q04
+    };
+
+    const csvRow = encodeCsvRow(row);
+    const output = document.getElementById("csvOutput");
+    if (output) output.value = csvRow;
+
+    setFormDisabled(true);
+
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(row)
+      });
+
+      if (!res.ok) {
+        console.error("Worker error:", res.status, await res.text());
+        setError("form-error", "Server error. Please try again later.");
+        setFormDisabled(false);
+        return;
       }
 
-      const msg = msgParts.length
-        ? msgParts.join(" / ")
-        : `Request failed (HTTP ${res.status})`;
+      const data = await res.json().catch(() => ({}));
+      if (!data.ok) {
+        setError("form-error", "API error. Please try again.");
+        setFormDisabled(false);
+        return;
+      }
 
-      setError("form-error", msg);
-      return;
+      // 成功時：結果ボックスを表示
+      const resultBox = document.getElementById("result");
+      if (resultBox) resultBox.style.display = "block";
+
+      // フォームをリセット（お好みで）
+      document.getElementById("surveyForm").reset();
+
+    } catch (err) {
+      console.error("Network error:", err);
+      setError("form-error", "Network error. Please try again.");
+    } finally {
+      setFormDisabled(false);
     }
-
-    // === 成功時 ===
-    // 既存のサクセスメッセージ + Issue へのリンクを表示
-    document.getElementById("result").style.display = "block";
-
-    const successBox = document.querySelector("#result .success-box");
-    if (successBox && data.issue_url) {
-      const extra = document.createElement("div");
-      extra.style.marginTop = "4px";
-      extra.innerHTML =
-        `GitHub Issue created: <a href="${data.issue_url}" target="_blank" rel="noopener">#${data.issue_number}</a>`;
-      successBox.appendChild(extra);
-    }
-  } catch (err) {
-    setError("form-error", "Network error: " + err.message);
   }
-}
 
-// 既存の submit イベント登録はこれで OK
-document
-  .getElementById("surveyForm")
-  .addEventListener("submit", handleSubmit);
-
-
+  // ==== 初期化 ====
+  document.addEventListener("DOMContentLoaded", () => {
+    const form = document.getElementById("surveyForm");
+    if (form) {
+      form.addEventListener("submit", handleSubmit);
+    }
     loadTranslations();
-  </script>
+  });
+</script>
+
 </body>
 </html>
