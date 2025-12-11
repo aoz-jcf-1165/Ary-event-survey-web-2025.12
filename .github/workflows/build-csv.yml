@@ -1,122 +1,144 @@
 name: Build Survey CSV
 
 on:
-  # Collect survey responses から呼び出す
+  # 手動実行
   workflow_dispatch:
-    inputs:
-      issue_number:
-        description: "Issue number that contains the survey response"
-        required: true
-        type: string
+
+  # 毎晩 JST 03:00 に自動再集計
+  schedule:
+    - cron: "0 18 * * *"   # UTC 18:00 → JST 翌日 03:00
 
 jobs:
-  build_csv:
+  rebuild:
     runs-on: ubuntu-latest
 
+    concurrency:
+      group: survey-csv
+      cancel-in-progress: false
+
     steps:
-      # 1) リポジトリを取得（履歴も持ってくる）
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # 2) アンケート Issue の本文を取得
-      - name: Load issue body
-        id: issue
+      - name: Rebuild data/survey.csv from all issues
+        id: rebuild
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const issueNumber = parseInt('${{ github.event.inputs.issue_number }}', 10);
+            const fs = require('fs');
+            const path = require('path');
 
-            const { data: issue } = await github.rest.issues.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: issueNumber,
-            });
+            const owner = context.repo.owner;
+            const repo  = context.repo.repo;
 
-            core.setOutput('body', issue.body || '');
+            const headers = [
+              'timestamp',
+              'language',
+              'player_name',
+              'Q2_time',
+              'Q3_time',
+              'Q4_day',
+            ];
 
-      # 3) data フォルダを必ず作成
-      - name: Create data directory
-        run: mkdir -p data
+            function escapeCSV(value) {
+              if (value == null) return '';
+              const s = String(value);
+              if (/[",\n]/.test(s)) {
+                return `"${s.replace(/"/g, '""')}"`;
+              }
+              return s;
+            }
 
-      # 4) Issue の Markdown テーブルから値を取り出して 1 行の CSV に変換
-      - name: Build CSV row from issue body
-        id: csv
+            function parseIssueBody(body) {
+              const lines = (body || '').split(/\r?\n/);
+              const map = {};
+
+              for (const line of lines) {
+                const m = line.match(/^\s*\|\s*([^|]+?)\s*\|\s*(.*?)\s*\|\s*$/);
+                if (m) {
+                  const key = m[1].trim();
+                  const value = m[2].trim();
+                  map[key] = value;
+                }
+              }
+
+              const rowObject = {
+                timestamp: map['timestamp'] || '',
+                language: map['language'] || '',
+                player_name: map['player_name'] || '',
+                Q2_time: map['Q2_time'] || map['Q02_time'] || '',
+                Q3_time: map['Q3_time'] || map['Q03_time'] || '',
+                Q4_day: map['Q4_day'] || map['Q04_day'] || '',
+              };
+
+              const hasValue = Object.values(rowObject).some(v => (v || '') !== '');
+              return hasValue ? rowObject : null;
+            }
+
+            core.info(`Fetching issues...`);
+
+            const issues = await github.paginate(
+              github.rest.issues.listForRepo,
+              { owner, repo, state: 'all', per_page: 100 }
+            );
+
+            const latestByPlayer = new Map();
+
+            for (const issue of issues) {
+              if (!issue.title?.startsWith("Survey response from:")) continue;
+
+              const rowObject = parseIssueBody(issue.body || '');
+              if (!rowObject?.player_name) continue;
+
+              const key = rowObject.player_name;
+              const createdAt = new Date(issue.created_at);
+
+              const existing = latestByPlayer.get(key);
+              if (!existing || createdAt > existing.createdAt) {
+                latestByPlayer.set(key, { createdAt, row: rowObject });
+              }
+            }
+
+            const finalRows = [...latestByPlayer.values()]
+              .sort((a, b) => a.createdAt - b.createdAt)
+              .map(e => e.row);
+
+            const dataDir = path.join(process.cwd(), 'data');
+            fs.mkdirSync(dataDir, { recursive: true });
+
+            const csvPath = path.join(dataDir, 'survey.csv');
+
+            let csv = headers.join(',');
+            if (finalRows.length) {
+              csv += '\n' + finalRows
+                .map(r => headers.map(h => escapeCSV(r[h])).join(','))
+                .join('\n');
+            }
+            csv += '\n';
+
+            fs.writeFileSync(csvPath, csv, 'utf8');
+
+            core.setOutput('csv_path', csvPath);
+            core.setOutput('row_count', finalRows.length);
+
+      - name: Commit and push changes
         env:
-          ISSUE_BODY: ${{ steps.issue.outputs.body }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ github.event.repository.default_branch }}
         run: |
-          body="$(printf '%s\n' "$ISSUE_BODY")"
-
-          # Markdown テーブルの 2 列目（項目名）をキーに 3 列目（値）を取得
-          get_value () {
-            printf '%s\n' "$body" \
-              | awk -F'|' -v key="$1" '
-                  $2 ~ key {
-                    val=$3
-                    gsub(/^[ \t]+|[ \t]+$/, "", val)
-                    gsub(/\r/, "", val)
-                    print val
-                    exit
-                  }
-                '
-          }
-
-          timestamp="$(get_value "timestamp")"
-          language="$(get_value "Language")"
-          player_name="$(get_value "Player")"
-          q02="$(get_value "Q2")"
-          q03="$(get_value "Q3")"
-          q04="$(get_value "Q4")"
-
-          # CSV 用に " をエスケープしてダブルクオートで囲む
-          esc () {
-            v="$1"
-            v="${v//\"/\"\"}"
-            printf '"%s"' "$v"
-          }
-
-          row="$(printf '%s,%s,%s,%s,%s,%s\n' \
-            "$(esc "$timestamp")" \
-            "$(esc "$language")" \
-            "$(esc "$player_name")" \
-            "$(esc "$q02")" \
-            "$(esc "$q03")" \
-            "$(esc "$q04")")"
-
-          echo "row=$row" >> "$GITHUB_OUTPUT"
-
-      # 5) data/survey.csv にヘッダー付きで追記
-      - name: Append row to data/survey.csv
-        run: |
-          FILE="data/survey.csv"
-
-          if [ ! -f "$FILE" ]; then
-            echo 'timestamp,language,player_name,Q02_time,Q03_time,Q04_day' > "$FILE"
-          fi
-
-          echo '${{ steps.csv.outputs.row }}' >> "$FILE"
-
-      # 6) コミットする（変更が無いときはスキップ）
-      - name: Commit CSV
-        run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "${GITHUB_ACTOR}"
+          git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
 
           git add data/survey.csv
 
           if git diff --cached --quiet; then
-            echo "No changes to commit."
+            echo "No updates to commit."
             exit 0
           fi
 
-          git commit -m "Update survey.csv for issue #${{ github.event.inputs.issue_number }}"
-
-      # 7) 競合に強い push（force-with-lease）
-      - name: Push to GitHub
-        uses: ad-m/github-push-action@v0.6.0
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: main          # ★ブランチ名が master の場合はここを master に変更
-          force_with_lease: true
+          git commit -m "Nightly rebuild survey.csv"
+          git pull --rebase origin "$BRANCH" || true
+          git push origin HEAD:"$BRANCH"
