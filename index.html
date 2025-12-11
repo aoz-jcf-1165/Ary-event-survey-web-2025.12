@@ -200,7 +200,6 @@
 
     .section-label {
       font-size: 12px;
-      /*text-transform: uppercase;*/
       letter-spacing: 1.4px;
       color: var(--text-muted);
       margin-bottom: 2px;
@@ -419,20 +418,15 @@
             </span>
           </div>
 
-          <!-- <div class="notice">
-            <span class="notice-dot"></span>
-            <span>Multi-language UI — answers saved in English codes (A/B/C…)</span>
-          </div> -->
-
           <form id="surveyForm">
             <!-- Q01 -->
             <div class="question">
               <div class="section-label notice">
                 <span class="notice-dot"></span>
                 Player Name
-              <br>  
+                <br>
               </div>
-              
+
               <div class="question-header">
                 <div class="question-title" data-i18n="q01_title">
                   Please enter your player name.
@@ -624,9 +618,6 @@
                 <span data-i18n="btn_submit">Submit</span>
                 <span>➤</span>
               </button>
-              <!-- <div class="submit-caption">
-                Answers are saved as English codes (A/B/C…) for Excel aggregation.
-              </div> -->
               <div id="form-error" class="error" style="text-align:center; display:none;"></div>
             </div>
           </form>
@@ -650,7 +641,6 @@
 
   <script>
   // ==== Cloudflare Worker API エンドポイント ====
-  // ★ここは必ず、ご自身の Workers.dev URL にします
   const API_URL = "https://tsc-survey-api.aozjakz01.workers.dev/";
 
   // ==== 多言語翻訳設定 ====
@@ -789,8 +779,9 @@
     });
   }
 
+  // ★ここを Q2_time/Q3_time/Q4_day に統一
   function encodeCsvRow(rowObj) {
-    const headers = ["timestamp", "language", "player_name", "Q02_time", "Q03_time", "Q04_day"];
+    const headers = ["timestamp", "language", "player_name", "Q2_time", "Q3_time", "Q4_day"];
     return headers.map(h => {
       const v = rowObj[h] ?? "";
       if (/[",]/.test(v)) {
@@ -835,13 +826,15 @@
     if (hasError) return;
 
     const timestamp = new Date().toISOString();
+
+    // ★ここも Q2_time/Q3_time/Q4_day に統一
     const row = {
       timestamp,
       language: currentLang,
       player_name: playerName,
-      Q02_time: q02,
-      Q03_time: q03,
-      Q04_day: q04
+      Q2_time: q02,
+      Q3_time: q03,
+      Q4_day: q04
     };
 
     const csvRow = encodeCsvRow(row);
@@ -873,11 +866,9 @@
         return;
       }
 
-      // 成功時：結果ボックスを表示
       const resultBox = document.getElementById("result");
       if (resultBox) resultBox.style.display = "block";
 
-      // フォームをリセット（お好みで）
       document.getElementById("surveyForm").reset();
 
     } catch (err) {
@@ -888,7 +879,6 @@
     }
   }
 
-  // ==== 初期化 ====
   document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("surveyForm");
     if (form) {
@@ -896,7 +886,7 @@
     }
     loadTranslations();
   });
-</script>
+  </script>
 
 </body>
 </html>
