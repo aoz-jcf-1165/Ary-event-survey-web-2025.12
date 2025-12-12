@@ -866,33 +866,27 @@
         return;
       }
 
-      // 成功時：結果ボックスを表示
       const resultBox = document.getElementById("result");
-if (resultBox) resultBox.style.display = "block";	if (resultBox) {
-        resultBox.style.display = "block";
-document.getElementById("surveyForm").reset();	// ★ ここで画面最下部の result までスムーズスクロール ★
-resultBox.scrollIntoView({
-behavior: "smooth",
-block: "start"
-});
-}
-// フォームをリセット
+      if (resultBox) resultBox.style.display = "block";
+
       document.getElementById("surveyForm").reset();
-} catch (err) {	} catch (err) {
-console.error("Network error:", err);	console.error("Network error:", err);
-setError("form-error", "Network error. Please try again.");	setError("form-error", "Network error. Please try again.");
-} finally {	} finally {
-setFormDisabled(false);	setFormDisabled(false);
-}	}
-}	}
-document.addEventListener("DOMContentLoaded", () => {	// ==== 初期化 ====
+
+    } catch (err) {
+      console.error("Network error:", err);
+      setError("form-error", "Network error. Please try again.");
+    } finally {
+      setFormDisabled(false);
+    }
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
-const form = document.getElementById("surveyForm");	const form = document.getElementById("surveyForm");
-if (form) {	if (form) {
-form.addEventListener("submit", handleSubmit);	form.addEventListener("submit", handleSubmit);
-}	}
-loadTranslations();	loadTranslations();
-});	});
-</script>	</script>
-</body>	</body>
-</html>	</html>
+    const form = document.getElementById("surveyForm");
+    if (form) {
+      form.addEventListener("submit", handleSubmit);
+    }
+    loadTranslations();
+  });
+  </script>
+
+</body>
+</html>
