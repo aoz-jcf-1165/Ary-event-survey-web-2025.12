@@ -782,7 +782,7 @@
   }
 
   function encodeCsvRow(rowObj) {
-    const headers = ["timestamp", "language", "player_name", "Q02_time", "Q03_time", "Q04_day"];
+    const headers = ["timestamp", "language", "player_name", "Q2_time", "Q3_time", "Q4_day"];
     return headers.map(h => {
       const v = rowObj[h] ?? "";
       if (/[",]/.test(v)) {
