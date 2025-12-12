@@ -752,6 +752,13 @@
 
   // ==== フォーム送信まわり ====
 
+  // ★ ADDED: 画面最下部へスクロール（Submitタップ時）
+  function scrollToBottomSmooth() {
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+    });
+  }
+
   function getRadioValue(name) {
     const node = document.querySelector(`input[name="${name}"]:checked`);
     return node ? node.value : "";
@@ -793,6 +800,9 @@
 
   async function handleSubmit(e) {
     e.preventDefault();
+
+    // ★ ADDED: Submitをタップしたら最下部へスクロール
+    scrollToBottomSmooth();
 
     // エラー表示クリア
     setError("form-error", "");
@@ -868,6 +878,9 @@
 
       const resultBox = document.getElementById("result");
       if (resultBox) resultBox.style.display = "block";
+
+      // ★ ADDED: 成功メッセージ表示後にも最下部へ（確実に見えるように）
+      scrollToBottomSmooth();
 
       document.getElementById("surveyForm").reset();
 
