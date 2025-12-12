@@ -1,903 +1,145 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>TSC Event Survey - 2025.12</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    :root {
-      --bg: #050816;
-      --bg-alt: #0b1020;
-      --card: #111827;
-      --accent: #38bdf8;
-      --accent-soft: rgba(56, 189, 248, 0.2);
-      --text-main: #e5e7eb;
-      --text-muted: #9ca3af;
-      --danger: #f97373;
-      --radius-lg: 18px;
-      --shadow-soft: 0 18px 40px rgba(0,0,0,0.45);
-    }
-
-    * {
-      box-sizing: border-box;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-        sans-serif;
-    }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      background: radial-gradient(circle at top, #1f2937 0, #020617 55%);
-      color: var(--text-main);
-      display: flex;
-      justify-content: center;
-      padding: 24px 16px 40px;
-    }
-
-    .app-shell {
-      width: 100%;
-      max-width: 560px;
-    }
-
-    .card {
-      background: linear-gradient(135deg, #020617, #020617 35%, #0b1120);
-      border-radius: 24px;
-      box-shadow: var(--shadow-soft);
-      border: 1px solid rgba(148, 163, 184, 0.15);
-      padding: 18px 18px 22px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .card::before {
-      content: "";
-      position: absolute;
-      inset: -120px;
-      opacity: 0.18;
-      background:
-        radial-gradient(circle at 0 0, rgba(56, 189, 248, 0.4), transparent 55%),
-        radial-gradient(circle at 100% 0, rgba(129, 140, 248, 0.4), transparent 55%);
-      pointer-events: none;
-    }
-
-    .card-inner {
-      position: relative;
-      z-index: 1;
-    }
-
-    header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      margin-bottom: 10px;
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .brand-logo {
-      width: 48px;
-      height: 40px;
-      border-radius: 50%;
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #fff;
-    }
-
-    .brand-logo img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      object-position: center;
-      display: block;
-    }
-
-    .brand-text-main {
-      font-size: 15px;
-      font-weight: 700;
-      letter-spacing: 0.6px;
-    }
-
-    .brand-text-sub {
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-
-    .lang-select-wrap {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      background: rgba(15, 23, 42, 0.8);
-      border-radius: 999px;
-      padding: 3px 8px 3px 10px;
-      border: 1px solid rgba(148, 163, 184, 0.4);
-      max-width: 48%;
-      justify-content: space-between;
-    }
-
-    .lang-select-wrap span {
-      font-size: 11px;
-      color: var(--text-muted);
-      white-space: nowrap;
-    }
-
-    select {
-      background: transparent;
-      border: none;
-      color: var(--text-main);
-      font-size: 12px;
-      padding: 3px 4px;
-      outline: none;
-      cursor: pointer;
-      max-width: 70%;
-    }
-
-    main {
-      margin-top: 8px;
-    }
-
-    h1 {
-      font-size: 18px;
-      margin: 0;
-      margin-bottom: 4px;
-    }
-
-    .tsc-image-01,
-    .tsc-image-02,
-    .tsc-image-03 {
-      margin: 8px 0 10px;
-      border-radius: 18px;
-      overflow: hidden;
-      border: 1px solid rgba(148, 163, 184, 0.25);
-      background: #020617;
-    }
-
-    .tsc-image-01 img,
-    .tsc-image-02 img,
-    .tsc-image-03 img {
-      display: block;
-      width: 100%;
-      height: auto;
-    }
-
-    .subtitle {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-bottom: 10px;
-    }
-
-    .notice {
-      font-size: 11px;
-      color: var(--accent);
-      background: var(--accent-soft);
-      border-radius: 999px;
-      padding: 4px 10px;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      margin-bottom: 14px;
-    }
-
-    .notice-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 999px;
-      background: var(--accent);
-      box-shadow: 0 0 8px rgba(56, 189, 248, 0.9);
-    }
-
-    form {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .section-label {
-      font-size: 12px;
-      /*text-transform: uppercase;*/
-      letter-spacing: 1.4px;
-      color: var(--text-muted);
-      margin-bottom: 2px;
-    }
-
-    .question {
-      background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.8), #020617);
-      border-radius: var(--radius-lg);
-      padding: 12px 12px 10px;
-      border: 1px solid rgba(148, 163, 184, 0.3);
-    }
-
-    .question-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 6px;
-    }
-
-    .question-title {
-      font-size: 13px;
-      font-weight: 600;
-    }
-
-    .badge {
-      font-size: 10px;
-      padding: 2px 7px;
-      border-radius: 999px;
-      background: rgba(15, 23, 42, 0.9);
-      border: 1px solid rgba(148, 163, 184, 0.5);
-      color: var(--text-muted);
-      white-space: nowrap;
-    }
-
-    .helper {
-      font-size: 11px;
-      color: var(--text-muted);
-      margin-bottom: 8px;
-    }
-
-    .field {
-      position: relative;
-      margin-top: 4px;
-    }
-
-    input[type="text"] {
-      width: 100%;
-      padding: 8px 11px;
-      border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, 0.5);
-      background: rgba(15, 23, 42, 0.9);
-      color: var(--text-main);
-      font-size: 13px;
-    }
-
-    input[type="text"]::placeholder {
-      color: #6b7280;
-    }
-
-    .options {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      margin-top: 2px;
-    }
-
-    .option-label {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 8px;
-      border-radius: 999px;
-      background: rgba(15, 23, 42, 0.8);
-      border: 1px solid transparent;
-      font-size: 12px;
-      color: var(--text-main);
-    }
-
-    .option-label input {
-      accent-color: var(--accent);
-    }
-
-    .option-label:hover {
-      border-color: rgba(56, 189, 248, 0.7);
-      background: rgba(15, 23, 42, 0.95);
-    }
-
-    .option-code {
-      font-size: 11px;
-      color: var(--accent);
-      min-width: 20px;
-    }
-
-    .submit-row {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      margin-top: 4px;
-    }
-
-    button[type="submit"] {
-      border: none;
-      border-radius: 999px;
-      padding: 9px 14px;
-      font-size: 13px;
-      font-weight: 600;
-      background: radial-gradient(circle at top left, #38bdf8, #4f46e5);
-      color: #0b1120;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      box-shadow: 0 12px 30px rgba(37, 99, 235, 0.7);
-    }
-
-    button[type="submit"]:active {
-      transform: translateY(1px);
-      box-shadow: 0 6px 14px rgba(37, 99, 235, 0.6);
-    }
-
-    .submit-caption {
-      font-size: 10px;
-      color: var(--text-muted);
-      text-align: center;
-    }
-
-    .error {
-      color: var(--danger);
-      font-size: 11px;
-      margin-top: 2px;
-    }
-
-    .success-box {
-      margin-top: 14px;
-      padding: 10px 11px;
-      border-radius: 14px;
-      border: 1px solid rgba(34, 197, 94, 0.5);
-      background: radial-gradient(circle at top left, rgba(22, 163, 74, 0.35), #022c22);
-      font-size: 11px;
-      color: #bbf7d0;
-    }
-
-    .csv-box {
-      margin-top: 8px;
-      padding: 10px 11px;
-      border-radius: 14px;
-      border: 1px dashed rgba(148, 163, 184, 0.5);
-      background: rgba(15, 23, 42, 0.75);
-    }
-
-    .csv-title {
-      font-size: 11px;
-      color: var(--text-muted);
-      margin-bottom: 4px;
-    }
-
-    textarea {
-      width: 100%;
-      min-height: 72px;
-      resize: vertical;
-      border-radius: 10px;
-      border: 1px solid rgba(148, 163, 184, 0.6);
-      background: #020617;
-      color: var(--text-main);
-      font-size: 11px;
-      padding: 6px 8px;
-    }
-
-    footer {
-      margin-top: 10px;
-      text-align: center;
-      font-size: 10px;
-      color: var(--text-muted);
-    }
-
-    @media (min-width: 640px) {
-      .card {
-        padding: 20px 22px 24px;
-      }
-    }
-  </style>
-</head>
-<body>
-  <div class="app-shell">
-    <div class="card">
-      <div class="card-inner">
-        <header>
-          <div class="brand">
-            <div class="brand-logo">
-              <img src="tsc-banner-00.webp" alt="TSC Event Logo" />
-            </div>
-            <div>
-              <div class="brand-text-main">TSC EVENT</div>
-              <div class="brand-text-sub">Multilingual Survey Form</div>
-            </div>
-          </div>
-
-          <div class="lang-select-wrap">
-            <span>Lang</span>
-            <select id="languageSelect"></select>
-          </div>
-        </header>
-
-        <main>
-          <h1 data-i18n="app_title">TSC Event Survey - 2025.12</h1>
-
-          <div class="tsc-image-01">
-            <img src="tsc-banner-01.png" alt="tsc-banner-01.png" />
-          </div>
-
-          <div class="subtitle">
-            <span data-i18n="note_schedule-01">
-              This survey aims to collect your preferred and available time slots for the event, and to help improve and maintain our team’s overall online participation rate. Thank you for your cooperation.
-            </span>
-          </div>
-
-          <form id="surveyForm">
-            <!-- Q01 -->
-            <div class="question">
-              <div class="section-label notice">
-                <span class="notice-dot"></span>
-                Player Name
-                <br>
-              </div>
-
-              <div class="question-header">
-                <div class="question-title" data-i18n="q01_title">
-                  Please enter your player name.
-                </div>
-                <div class="badge">Q01</div>
-              </div>
-              <div class="field">
-                <input
-                  id="playerName"
-                  type="text"
-                  required
-                  data-i18n-placeholder="q01_placeholder"
-                  placeholder="Enter your answer"
-                />
-              </div>
-              <div id="error-playerName" class="error" style="display:none;"></div>
-            </div>
-
-            <!-- Q02 -->
-            <div class="question">
-              <div class="tsc-image-02">
-                <img src="tsc-banner-02.png" alt="tsc-banner-02.png" />
-              </div>
-              <div class="section-label notice">
-                <span class="notice-dot"></span>
-                Polar Invasion / Wasteland Showdown, etc
-              </div>
-              <br>
-              <div class="question-header">
-                <div class="question-title" data-i18n="q02_title">
-                  Please choose your first choice for the time slot.
-                </div>
-                <div class="badge">Q02</div>
-              </div>
-
-              <div class="options">
-                <label class="option-label">
-                  <input type="radio" name="q02" value="A" />
-                  <span class="option-code">A</span>
-                  <span data-i18n="q02_opt_A">Server Time 04:00 - 05:00</span>
-                </label>
-
-                <label class="option-label">
-                  <input type="radio" name="q02" value="B" />
-                  <span class="option-code">B</span>
-                  <span data-i18n="q02_opt_B">Server Time 13:00 - 14:00</span>
-                </label>
-
-                <label class="option-label">
-                  <input type="radio" name="q02" value="C" />
-                  <span class="option-code">C</span>
-                  <span data-i18n="q02_opt_C">Server Time 21:00 - 22:00</span>
-                </label>
-
-                <label class="option-label">
-                  <input type="radio" name="q02" value="D" />
-                  <span class="option-code">D</span>
-                  <span data-i18n="q02_opt_D">Anytime</span>
-                </label>
-              </div>
-              <div id="error-q02" class="error" style="display:none;"></div>
-            </div>
-
-            <!-- Q03 -->
-            <div class="question">
-              <div class="tsc-image-03">
-                <img src="tsc-banner-03.png" alt="tsc-banner-03.png" />
-              </div>
-              <div class="section-label notice">
-                <span class="notice-dot"></span>
-                Elite War / Doom Arena / Zombie Uprise, etc
-              </div>
-              <br>
-              <div class="question-header">
-                <div class="question-title" data-i18n="q03_title">
-                  Please choose your first choice for the time slot.
-                </div>
-                <div class="badge">Q03</div>
-              </div>
-              <div class="helper" data-i18n="note_schedule-02">
-                The schedule is just a general guideline, and actual times may vary depending on the situation.
-              </div>
-
-              <div class="options">
-                <label class="option-label">
-                  <input type="radio" name="q03" value="A" />
-                  <span class="option-code">A</span>
-                  <span data-i18n="q03_opt_A">Server Time around 04:00 - 05:00</span>
-                </label>
-
-                <label class="option-label">
-                  <input type="radio" name="q03" value="B" />
-                  <span class="option-code">B</span>
-                  <span data-i18n="q03_opt_B">Server Time around 13:00 - 14:00</span>
-                </label>
-
-                <label class="option-label">
-                  <input type="radio" name="q03" value="C" />
-                  <span class="option-code">C</span>
-                  <span data-i18n="q03_opt_C">Server Time around 21:00 - 22:00</span>
-                </label>
-
-                <label class="option-label">
-                  <input type="radio" name="q03" value="D" />
-                  <span class="option-code">D</span>
-                  <span data-i18n="q03_opt_D">Anytime</span>
-                </label>
-
-                <label class="option-label">
-                  <input type="radio" name="q03" value="E" />
-                  <span class="option-code">E</span>
-                  <span data-i18n="q03_opt_E">N/A</span>
-                </label>
-              </div>
-              <div id="error-q03" class="error" style="display:none;"></div>
-            </div>
-
-            <!-- Q04 -->
-            <div class="question">
-              <div class="section-label notice">
-                <span class="notice-dot"></span>
-                Elite War / Doom Arena / Zombie Uprise, etc
-              </div>
-              <br>
-              <div class="question-header">
-                <div class="question-title" data-i18n="q04_title">
-                  Please choose your first choice of day.
-                </div>
-                <div class="badge">Q04</div>
-              </div>
-              <div class="helper" data-i18n="note_schedule-02">
-                The schedule is just a general guideline, and actual times may vary depending on the situation.
-              </div>
-
-              <div class="options">
-                <label class="option-label">
-                  <input type="radio" name="q04" value="A" />
-                  <span class="option-code">A</span>
-                  <span data-i18n="q04_opt_A">Monday</span>
-                </label>
-
-                <label class="option-label">
-                  <input type="radio" name="q04" value="B" />
-                  <span class="option-code">B</span>
-                  <span data-i18n="q04_opt_B">Tuesday</span>
-                </label>
-
-                <label class="option-label">
-                  <input type="radio" name="q04" value="C" />
-                  <span class="option-code">C</span>
-                  <span data-i18n="q04_opt_C">Wednesday</span>
-                </label>
-
-                <label class="option-label">
-                  <input type="radio" name="q04" value="D" />
-                  <span class="option-code">D</span>
-                  <span data-i18n="q04_opt_D">Thursday</span>
-                </label>
-
-                <label class="option-label">
-                  <input type="radio" name="q04" value="E" />
-                  <span class="option-code">E</span>
-                  <span data-i18n="q04_opt_E">Friday</span>
-                </label>
-
-                <label class="option-label">
-                  <input type="radio" name="q04" value="F" />
-                  <span class="option-code">F</span>
-                  <span data-i18n="q04_opt_F">Saturday</span>
-                </label>
-
-                <label class="option-label">
-                  <input type="radio" name="q04" value="G" />
-                  <span class="option-code">G</span>
-                  <span data-i18n="q04_opt_G">Sunday</span>
-                </label>
-
-                <label class="option-label">
-                  <input type="radio" name="q04" value="H" />
-                  <span class="option-code">H</span>
-                  <span data-i18n="q04_opt_H">Any day</span>
-                </label>
-              </div>
-              <div id="error-q04" class="error" style="display:none;"></div>
-            </div>
-
-            <div class="submit-row">
-              <button type="submit">
-                <span data-i18n="btn_submit">Submit</span>
-                <span>➤</span>
-              </button>
-              <div id="form-error" class="error" style="text-align:center; display:none;"></div>
-            </div>
-          </form>
-
-          <div id="result" style="display:none;">
-            <div class="success-box">
-              <div data-i18n="msg_success">Thank you for your submission!</div>
-              <div style="margin-top:4px;">
-                Your answers have been sent to GitHub Issues (private) for later Excel aggregation.
-              </div>
-            </div>
-          </div>
-        </main>
-
-        <footer>
-          TSC Event Survey · Built for multi-language clan scheduling
-        </footer>
-      </div>
-    </div>
-  </div>
-
-  <script>
-  // ==== Cloudflare Worker API エンドポイント ====
-  // ★ここは必ず、ご自身の Workers.dev URL にします
-  const API_URL = "https://tsc-survey-api.aozjakz01.workers.dev/";
-
-  // ==== 多言語翻訳設定 ====
-  const TRANSLATION_FILE = "translations.tsv";
-
-  const LANGUAGE_LABELS = {
-    "en": "English",
-    "de": "Deutsch",
-    "nl": "Nederlands",
-    "fr": "Français",
-    "ru": "Русский",
-    "es": "Español",
-    "pt": "Português",
-    "it": "Italiano",
-    "zh-Hans": "简体中文",
-    "ja": "日本語",
-    "ko": "한국어",
-    "zh-Hant": "繁體中文",
-    "ar": "العربية",
-    "th": "ไทย",
-    "vi": "Tiếng Việt",
-    "tr": "Türkçe",
-    "pl": "Polski",
-    "ms": "Bahasa Melayu",
-    "id": "Bahasa Indonesia"
+// tsc-survey-api - Cloudflare Worker (stable)
+// JSON を受け取り、GitHub Issues に保存（キー名をCSV側と完全一致させる）
+// 追加: 同一 player_name の古い Issue を close して「上書き」運用も可能
+
+const GITHUB_REPO = "aoz-jcf-1165/TSC-event-survey-web-2025.12";
+
+function corsHeaders() {
+  return {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
   };
+}
 
-  let translations = {};
-  let availableLangs = [];
-  let currentLang = "en";
-
-  function parseTSV(text) {
-    const lines = text.split(/\r?\n/).filter(l => l.trim() !== "");
-    if (lines.length < 2) return;
-    const headerCols = lines[0].split("\t");
-    const langs = headerCols.slice(1);
-    availableLangs = langs;
-
-    const data = {};
-    for (let i = 1; i < lines.length; i++) {
-      const cols = lines[i].split("\t");
-      const key = cols[0];
-      if (!key) continue;
-      data[key] = {};
-      langs.forEach((lang, idx) => {
-        data[key][lang] = cols[idx + 1] || "";
-      });
-    }
-    translations = data;
-  }
-
-  function t(key) {
-    const entry = translations[key];
-    if (!entry) return key;
-    return entry[currentLang] || entry["en"] || key;
-  }
-
-  function applyLanguage(lang) {
-    currentLang = lang;
-    document.documentElement.lang = lang;
-    document.documentElement.dir = (lang === "ar") ? "rtl" : "ltr";
-
-    document.querySelectorAll("[data-i18n]").forEach(el => {
-      const key = el.dataset.i18n;
-      el.textContent = t(key);
-    });
-    document.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
-      const key = el.dataset.i18nPlaceholder;
-      el.placeholder = t(key);
-    });
-  }
-
-  function populateLanguageSelect() {
-    const select = document.getElementById("languageSelect");
-    if (!select) return;
-    select.innerHTML = "";
-
-    const ordered = ["en", ...availableLangs.filter(l => l !== "en")];
-
-    ordered.forEach(code => {
-      if (!availableLangs.includes(code)) return;
-      const opt = document.createElement("option");
-      opt.value = code;
-      opt.textContent = LANGUAGE_LABELS[code] || code;
-      if (code === currentLang) opt.selected = true;
-      select.appendChild(opt);
-    });
-
-    select.addEventListener("change", () => {
-      applyLanguage(select.value);
-    });
-  }
-
-  async function loadTranslations() {
-    try {
-      const res = await fetch(TRANSLATION_FILE);
-      if (!res.ok) {
-        console.error("Failed to load translations.tsv");
-        return;
-      }
-      const text = await res.text();
-      parseTSV(text);
-      populateLanguageSelect();
-      applyLanguage(currentLang);
-    } catch (e) {
-      console.error("Error loading translations:", e);
-    }
-  }
-
-  // ==== フォーム送信まわり ====
-
-  function getRadioValue(name) {
-    const node = document.querySelector(`input[name="${name}"]:checked`);
-    return node ? node.value : "";
-  }
-
-  function setError(id, msg) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    if (msg) {
-      el.textContent = msg;
-      el.style.display = "block";
-    } else {
-      el.textContent = "";
-      el.style.display = "none";
-    }
-  }
-
-  function setFormDisabled(disabled) {
-    const form = document.getElementById("surveyForm");
-    if (!form) return;
-    Array.from(form.elements).forEach(el => {
-      if (el.tagName === "BUTTON" || el.tagName === "INPUT" || el.tagName === "SELECT" || el.tagName === "TEXTAREA") {
-        el.disabled = disabled;
-      }
-    });
-  }
-
-  function encodeCsvRow(rowObj) {
-    const headers = ["timestamp", "language", "player_name", "Q2_time", "Q3_time", "Q4_day"];
-    return headers.map(h => {
-      const v = rowObj[h] ?? "";
-      if (/[",]/.test(v)) {
-        return `"${String(v).replace(/"/g, '""')}"`;
-      }
-      return v;
-    }).join(",");
-  }
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-
-    // エラー表示クリア
-    setError("form-error", "");
-    setError("error-playerName", "");
-    setError("error-q02", "");
-    setError("error-q03", "");
-    setError("error-q04", "");
-
-    const playerName = document.getElementById("playerName").value.trim();
-    const q02 = getRadioValue("q02");
-    const q03 = getRadioValue("q03");
-    const q04 = getRadioValue("q04");
-
-    let hasError = false;
-    if (!playerName) {
-      setError("error-playerName", "Required / 必須です");
-      hasError = true;
-    }
-    if (!q02) {
-      setError("error-q02", "Please select one option.");
-      hasError = true;
-    }
-    if (!q03) {
-      setError("error-q03", "Please select one option.");
-      hasError = true;
-    }
-    if (!q04) {
-      setError("error-q04", "Please select one option.");
-      hasError = true;
-    }
-    if (hasError) return;
-
-    const timestamp = new Date().toISOString();
-    const row = {
-      timestamp,
-      language: currentLang,
-      player_name: playerName,
-      Q2_time: q02,
-      Q3_time: q03,
-      Q4_day: q04
-    };
-
-    // CSV 文字列は今は画面表示していないが、念のため生成だけしておく
-    const csvRow = encodeCsvRow(row);
-    const output = document.getElementById("csvOutput");
-    if (output) output.value = csvRow;
-
-    setFormDisabled(true);
-
-    try {
-      const res = await fetch(API_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(row)
-      });
-
-      if (!res.ok) {
-        console.error("Worker error:", res.status, await res.text());
-        setError("form-error", "Server error. Please try again later.");
-        setFormDisabled(false);
-        return;
-      }
-
-      const data = await res.json().catch(() => ({}));
-      if (!data.ok) {
-        setError("form-error", "API error. Please try again.");
-        setFormDisabled(false);
-        return;
-      }
-
-      // 成功時：結果ボックスを表示
-      const resultBox = document.getElementById("result");
-      if (resultBox) {
-        resultBox.style.display = "block";
-
-        // ★ ここで画面最下部の result までスムーズスクロール ★
-        resultBox.scrollIntoView({
-          behavior: "smooth",
-          block: "start"
-        });
-      }
-
-      // フォームをリセット
-      document.getElementById("surveyForm").reset();
-
-    } catch (err) {
-      console.error("Network error:", err);
-      setError("form-error", "Network error. Please try again.");
-    } finally {
-      setFormDisabled(false);
-    }
-  }
-
-  // ==== 初期化 ====
-  document.addEventListener("DOMContentLoaded", () => {
-    const form = document.getElementById("surveyForm");
-    if (form) {
-      form.addEventListener("submit", handleSubmit);
-    }
-    loadTranslations();
+function jsonResp(obj, status = 200) {
+  return new Response(JSON.stringify(obj), {
+    status,
+    headers: { ...corsHeaders(), "Content-Type": "application/json" },
   });
-  </script>
+}
 
-</body>
-</html>
+function normalizeText(v) {
+  if (v == null) return "";
+  return String(v).trim();
+}
+
+async function ghFetch(url, env, options = {}) {
+  const res = await fetch(url, {
+    ...options,
+    headers: {
+      Authorization: `Bearer ${env.GITHUB_TOKEN}`,
+      Accept: "application/vnd.github+json",
+      "Content-Type": "application/json",
+      "User-Agent": "tsc-survey-worker",
+      ...(options.headers || {}),
+    },
+  });
+  return res;
+}
+
+export default {
+  async fetch(request, env, ctx) {
+    if (request.method === "OPTIONS") {
+      return new Response("", { status: 204, headers: corsHeaders() });
+    }
+    if (request.method !== "POST") {
+      return jsonResp({ ok: false, error: "Use POST only." }, 405);
+    }
+
+    let payload;
+    try {
+      payload = await request.json();
+    } catch {
+      return jsonResp({ ok: false, error: "Invalid JSON" }, 400);
+    }
+
+    const timestamp = normalizeText(payload?.timestamp) || new Date().toISOString();
+    const language = normalizeText(payload?.language);
+    const player_name = normalizeText(payload?.player_name);
+
+    // フロントは Q02_time/Q03_time/Q04_day を送ってくる前提
+    // ただし念のため別名も吸_ALLOWED
+    const Q2_time =
+      normalizeText(payload?.Q2_time) ||
+      normalizeText(payload?.Q02_time) ||
+      normalizeText(payload?.q02) ||
+      "";
+    const Q3_time =
+      normalizeText(payload?.Q3_time) ||
+      normalizeText(payload?.Q03_time) ||
+      normalizeText(payload?.q03) ||
+      "";
+    const Q4_day =
+      normalizeText(payload?.Q4_day) ||
+      normalizeText(payload?.Q04_day) ||
+      normalizeText(payload?.q04) ||
+      "";
+
+    if (!player_name) {
+      return jsonResp({ ok: false, error: "player_name is required" }, 400);
+    }
+
+    const issueTitle = `Survey response from: ${player_name}`;
+
+    // ★ここが重要：Actions が読むキー名と完全一致させる
+    const issueBody = [
+      "| Field | Value |",
+      "| --- | --- |",
+      `| timestamp | ${timestamp} |`,
+      `| language | ${language} |`,
+      `| player_name | ${player_name} |`,
+      `| Q2_time | ${Q2_time} |`,
+      `| Q3_time | ${Q3_time} |`,
+      `| Q4_day | ${Q4_day} |`,
+      "",
+      "_Generated automatically from Cloudflare Worker._",
+    ].join("\n");
+
+    try {
+      // --- 任意：同一 player_name の古い Issue を close（= 上書き運用） ---
+      // これを有効にしたい場合は true にしてください
+      const CLOSE_OLD_ISSUES = true;
+
+      if (CLOSE_OLD_ISSUES) {
+        // open issue を検索（タイトル完全一致）
+        const listUrl = `https://api.github.com/repos/${GITHUB_REPO}/issues?state=open&per_page=100`;
+        const listRes = await ghFetch(listUrl, env, { method: "GET" });
+        if (listRes.ok) {
+          const issues = await listRes.json();
+          const targets = issues.filter((it) => it?.title === issueTitle);
+          // 既存があれば close（最新を作る前に閉じる）
+          for (const it of targets) {
+            await ghFetch(`https://api.github.com/repos/${GITHUB_REPO}/issues/${it.number}`, env, {
+              method: "PATCH",
+              body: JSON.stringify({ state: "closed" }),
+            });
+          }
+        }
+      }
+
+      // --- Issue 作成 ---
+      const createRes = await ghFetch(
+        `https://api.github.com/repos/${GITHUB_REPO}/issues`,
+        env,
+        {
+          method: "POST",
+          body: JSON.stringify({ title: issueTitle, body: issueBody }),
+        }
+      );
+
+      if (!createRes.ok) {
+        const errorText = await createRes.text();
+        return jsonResp(
+          { ok: false, githubStatus: createRes.status, githubBody: errorText },
+          502
+        );
+      }
+
+      const ghData = await createRes.json();
+      return jsonResp({ ok: true, issueNumber: ghData.number }, 200);
+    } catch (err) {
+      return jsonResp({ ok: false, error: String(err) }, 500);
+    }
+  },
+};
