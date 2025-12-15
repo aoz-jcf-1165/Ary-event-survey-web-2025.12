@@ -19,7 +19,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Rebuild data/survey.csv from all issues
+      - name: Rebuild data/survey.csv from open issues only
         id: rebuild
         uses: actions/github-script@v7
         with:
@@ -73,11 +73,11 @@ jobs:
               return hasValue ? rowObject : null;
             }
 
-            core.info(`Fetching issues...`);
+            core.info(`Fetching OPEN issues only...`);
 
             const issues = await github.paginate(
               github.rest.issues.listForRepo,
-              { owner, repo, state: 'all', per_page: 100 }
+              { owner, repo, state: 'open', per_page: 100 } // ★ open のみ
             );
 
             const latestByPlayer = new Map();
