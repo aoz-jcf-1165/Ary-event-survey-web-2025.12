@@ -29,52 +29,24 @@
           <h2>Respondents</h2>
           <span class="muted" id="respondentCount">0</span>
         </summary>
-
         <div class="card-body">
-          <!-- ★ Respondents専用：ヘッダーとボディを分離 -->
-          <div class="resp-wrap" id="respWrap">
-            <div class="resp-head">
-              <div class="table-wrap head-wrap" id="respHeadWrap">
-                <table class="table" id="tblRespondentsHead" aria-hidden="true">
-                  <colgroup>
-                    <col style="width:56px">
-                    <col>
-                    <col style="width:72px">
-                    <col style="width:56px">
-                    <col style="width:56px">
-                    <col style="width:56px">
-                  </colgroup>
-                  <thead>
-                    <tr>
-                      <th class="num">No</th>
-                      <th>Name</th>
-                      <th class="num">Lang</th>
-                      <th class="num">Q2</th>
-                      <th class="num">Q3</th>
-                      <th class="num">Q4</th>
-                    </tr>
-                  </thead>
-                </table>
-              </div>
-            </div>
+          <div class="table-wrap">
+            <table class="table" id="tblRespondents">
+              <thead>
+                <tr>
+                  <th style="width:56px;" class="num">No</th>
+                  <th>Name</th>
+                  <th style="width:72px;" class="num">Lang</th>
 
-            <div class="resp-body">
-              <div class="table-wrap body-wrap" id="respBodyWrap">
-                <table class="table" id="tblRespondents">
-                  <colgroup>
-                    <col style="width:56px">
-                    <col>
-                    <col style="width:72px">
-                    <col style="width:56px">
-                    <col style="width:56px">
-                    <col style="width:56px">
-                  </colgroup>
-                  <tbody><!-- injected --></tbody>
-                </table>
-              </div>
-            </div>
+                  <!-- ★ 追加 -->
+                  <th style="width:56px;" class="num">Q2</th>
+                  <th style="width:56px;" class="num">Q3</th>
+                  <th style="width:56px;" class="num">Q4</th>
+                </tr>
+              </thead>
+              <tbody><!-- injected --></tbody>
+            </table>
           </div>
-
           <div class="hint">
             Same player name re-submissions can be de-duplicated to the latest entry.
           </div>
@@ -84,6 +56,7 @@
 
     <!-- Right: Sections -->
     <section class="maincol">
+      <!-- Card template: Table + Chart -->
       <section class="card">
         <div class="card-head">
           <h2>Polar Invasion / Wasteland Showdown</h2>
@@ -99,7 +72,9 @@
               </table>
             </div>
           </div>
-          <div class="chart-wrap"><canvas id="chartQ2First"></canvas></div>
+          <div class="chart-wrap">
+            <canvas id="chartQ2First"></canvas>
+          </div>
         </div>
       </section>
 
@@ -116,7 +91,9 @@
               <tfoot><tr><th>Total</th><th class="num" id="q3TimeTotal">0</th></tr></tfoot>
             </table>
           </div>
-          <div class="chart-wrap"><canvas id="chartQ3Time"></canvas></div>
+          <div class="chart-wrap">
+            <canvas id="chartQ3Time"></canvas>
+          </div>
         </div>
       </section>
 
@@ -133,7 +110,9 @@
               <tfoot><tr><th>Total</th><th class="num" id="q4DayTotal">0</th></tr></tfoot>
             </table>
           </div>
-          <div class="chart-wrap"><canvas id="chartQ4Day"></canvas></div>
+          <div class="chart-wrap">
+            <canvas id="chartQ4Day"></canvas>
+          </div>
         </div>
       </section>
 
@@ -150,7 +129,9 @@
               <tfoot><tr><th>Total</th><th class="num" id="langTotal">0</th></tr></tfoot>
             </table>
           </div>
-          <div class="chart-wrap"><canvas id="chartLang"></canvas></div>
+          <div class="chart-wrap">
+            <canvas id="chartLang"></canvas>
+          </div>
         </div>
       </section>
 
