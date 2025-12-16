@@ -1,12 +1,38 @@
-// ==== Cloudflare Worker API エンドポイント ====
-const API_URL = "https://tsc-survey-api.aozjakz01.workers.dev/";
+// ===============================
+// TSC Survey Report - report.js
+// OPTION ③: Horizontal bars (indexAxis:'y')
+// CSV columns:
+// timestamp,language,player_name,Q2_time,Q3_time,Q4_day
+// ===============================
 
-// ==== 多言語翻訳設定 ====
-const TRANSLATION_FILE = "translations.tsv";
+const CSV_URL = new URL("../data/survey.csv", location.href).toString();
+let charts = [];
 
-// ===== CDN PDF link =====
-const CDN_PDF_URL =
-  "https://cdn.jsdelivr.net/gh/aoz-jcf-1165/TSC-event-survey-web-2025.12@main/share_document/TSC-event-survey-2025-12.pdf";
+const Q2_TIME_LABELS = {
+  A: "A. Server Time 04:00 - 05:00",
+  B: "B. Server Time 13:00 - 14:00",
+  C: "C. Server Time 21:00 - 22:00",
+  D: "D. Anytime",
+};
+
+const Q3_TIME_LABELS = {
+  A: "A. Server Time around 04:00 - 05:00",
+  B: "B. Server Time around 13:00 - 14:00",
+  C: "C. Server Time around 21:00 - 22:00",
+  D: "D. Anytime",
+  E: "E. N/A",
+};
+
+const Q4_DAY_LABELS = {
+  A: "A. Monday",
+  B: "B. Tuesday",
+  C: "C. Wednesday",
+  D: "D. Thursday",
+  E: "E. Friday",
+  F: "F. Saturday",
+  G: "G. Sunday",
+  H: "H. Any day",
+};
 
 const LANGUAGE_LABELS = {
   "en": "English",
@@ -17,287 +43,351 @@ const LANGUAGE_LABELS = {
   "es": "Español",
   "pt": "Português",
   "it": "Italiano",
-  "zh-Hans": "简体中文",
+  "zh-hans": "简体中文",
   "ja": "日本語",
   "ko": "한국어",
-  "zh-Hant": "繁體中文",
+  "zh-hant": "繁體中文",
   "ar": "العربية",
   "th": "ไทย",
   "vi": "Tiếng Việt",
   "tr": "Türkçe",
   "pl": "Polski",
   "ms": "Bahasa Melayu",
-  "id": "Bahasa Indonesia"
+  "id": "Bahasa Indonesia",
 };
 
-let translations = {};
-let availableLangs = [];
+const LANGUAGE_ORDER = [
+  "en","de","nl","fr","ru","es","pt","it","zh-hans","ja","ko","zh-hant","ar","th","vi","tr","pl","ms","id"
+];
 
-// ★ 言語は localStorage を優先（無ければ en）
-let currentLang = (localStorage.getItem("tsc_lang") || "en").trim() || "en";
+const elLastUpdated = document.getElementById("lastUpdated");
+const elRespondentCount = document.getElementById("respondentCount");
+const elBtnRefresh = document.getElementById("btnRefresh");
 
-// ★ 翻訳ロード完了フラグ（未完了なら送信禁止）
-let isAppReady = false;
+const tblRespondentsBody = document.querySelector("#tblRespondents tbody");
+const tblQ2FirstBody = document.querySelector("#tblQ2First tbody");
+const tblQ3TimeBody  = document.querySelector("#tblQ3Time tbody");
+const tblQ4DayBody   = document.querySelector("#tblQ4Day tbody");
+const tblLangBody    = document.querySelector("#tblLang tbody");
 
-function parseTSV(text) {
-  const lines = text.split(/\r?\n/).filter(l => l.trim() !== "");
-  if (lines.length < 2) return;
-  const headerCols = lines[0].split("\t");
-  const langs = headerCols.slice(1);
-  availableLangs = langs;
+const elQ2FirstTotal = document.getElementById("q2FirstTotal");
+const elQ3TimeTotal  = document.getElementById("q3TimeTotal");
+const elQ4DayTotal   = document.getElementById("q4DayTotal");
+const elLangTotal    = document.getElementById("langTotal");
 
-  const data = {};
-  for (let i = 1; i < lines.length; i++) {
-    const cols = lines[i].split("\t");
-    const key = cols[0];
-    if (!key) continue;
-    data[key] = {};
-    langs.forEach((lang, idx) => {
-      data[key][lang] = cols[idx + 1] || "";
-    });
-  }
-  translations = data;
+function escapeHtml(s){
+  return String(s ?? "").replace(/[&<>"']/g, m => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[m]));
+}
+function safeTrim(s){ return String(s ?? "").trim(); }
+function parseTimestamp(ts){
+  const t = Date.parse(ts);
+  return Number.isFinite(t) ? t : 0;
 }
 
-function t(key) {
-  const entry = translations[key];
-  if (!entry) return null;
-  return entry[currentLang] || entry["en"] || null;
+// ★ ここが要：ドット前のコード抽出（A/B/C...）
+// 例: "A. xxx" → "A", "A xxx" → "A", "A" → "A"
+function extractLeadingLetter(value){
+  const s = safeTrim(value);
+  if (!s) return "";
+  const m = s.match(/^([A-Za-z])(?:[\.\s]|$)/);
+  return m ? m[1].toUpperCase() : "";
 }
 
-function applyLanguage(lang) {
-  // ★ 正規化（小文字 + trim）
-  currentLang = (lang || "en").toString().trim() || "en";
-  localStorage.setItem("tsc_lang", currentLang);
-
-  document.documentElement.lang = currentLang;
-  document.documentElement.dir = (currentLang === "ar") ? "rtl" : "ltr";
-
-  document.querySelectorAll("[data-i18n]").forEach(el => {
-    const key = el.dataset.i18n;
-    const translated = t(key);
-    if (translated != null) el.textContent = translated;
-  });
-  document.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
-    const key = el.dataset.i18nPlaceholder;
-    const translated = t(key);
-    if (translated != null) el.placeholder = translated;
-  });
+// ★ Respondents 表示用：必ず「ドット前だけ」に寄せる
+function displayAnswerCode(value){
+  const code = extractLeadingLetter(value);
+  // 既に "A" だけ入っている場合も code で拾える。拾えなければ "-"。
+  return code || "-";
 }
 
-function populateLanguageSelect() {
-  const select = document.getElementById("languageSelect");
-  if (!select) return;
+function canonicalizeAnswer(value, labelMap){
+  const s = safeTrim(value);
+  if (!s) return "";
+  const letter = extractLeadingLetter(s);
+  if (letter && labelMap[letter]) return labelMap[letter];
 
-  select.innerHTML = "";
-  const ordered = ["en", ...availableLangs.filter(l => l !== "en")];
+  const normalized = s.replace(/\s+/g, " ").trim();
+  const mapValues = Object.values(labelMap);
+  const found = mapValues.find(v => v.replace(/\s+/g, " ").trim() === normalized);
+  if (found) return found;
 
-  // currentLang が TSV に存在しない場合は en に戻す
-  if (!availableLangs.includes(currentLang)) currentLang = "en";
-
-  ordered.forEach(code => {
-    if (!availableLangs.includes(code)) return;
-    const opt = document.createElement("option");
-    opt.value = code;
-    opt.textContent = LANGUAGE_LABELS[code] || code;
-    if (code === currentLang) opt.selected = true;
-    select.appendChild(opt);
-  });
-
-  select.addEventListener("change", () => {
-    applyLanguage(select.value);
-  });
+  return normalized;
 }
 
-function wireCdnLink() {
-  const a = document.getElementById("cdnPdfLink");
-  if (a) a.href = CDN_PDF_URL;
+function langDisplay(langCodeRaw){
+  const code = safeTrim(langCodeRaw).toLowerCase();
+  const label = LANGUAGE_LABELS[code] || (code ? code : "—");
+  return { code: code || "—", label };
 }
 
-function setSubmitEnabled(enabled) {
-  const btn = document.getElementById("submitBtn");
-  if (btn) btn.disabled = !enabled;
-}
+function parseCSV(text){
+  const rows = [];
+  let row = [];
+  let field = "";
+  let i = 0;
+  let inQuotes = false;
 
-async function loadTranslations() {
-  try {
-    wireCdnLink();
+  while (i < text.length){
+    const c = text[i];
 
-    const res = await fetch(TRANSLATION_FILE, { cache: "no-store" });
-    if (!res.ok) {
-      console.error("Failed to load translations.tsv");
-      // 翻訳がなくても動かすが、言語選択が壊れるので送信は許可しない（事故防止）
-      setSubmitEnabled(false);
-      return;
+    if (inQuotes){
+      if (c === '"'){
+        const next = text[i+1];
+        if (next === '"'){
+          field += '"';
+          i += 2;
+          continue;
+        } else {
+          inQuotes = false;
+          i++;
+          continue;
+        }
+      } else {
+        field += c;
+        i++;
+        continue;
+      }
+    } else {
+      if (c === '"'){ inQuotes = true; i++; continue; }
+      if (c === ","){ row.push(field); field=""; i++; continue; }
+      if (c === "\r"){ i++; continue; }
+      if (c === "\n"){ row.push(field); field=""; rows.push(row); row=[]; i++; continue; }
+      field += c; i++;
     }
-    const text = await res.text();
-    parseTSV(text);
-    populateLanguageSelect();
-    applyLanguage(currentLang);
-
-    isAppReady = true;
-    setSubmitEnabled(true);
-  } catch (e) {
-    console.error("Error loading translations:", e);
-    setSubmitEnabled(false);
   }
-}
+  row.push(field);
+  rows.push(row);
 
-function scrollToBottomSmooth() {
-  requestAnimationFrame(() => {
-    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
-  });
-}
+  while (rows.length && rows[rows.length-1].every(x => safeTrim(x) === "")) rows.pop();
+  if (!rows.length) return [];
 
-function getRadioValue(name) {
-  const node = document.querySelector(`input[name="${name}"]:checked`);
-  return node ? node.value : "";
-}
-
-function setError(id, msg) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  if (msg) {
-    el.textContent = msg;
-    el.style.display = "block";
-  } else {
-    el.textContent = "";
-    el.style.display = "none";
+  const headers = rows[0].map(h => safeTrim(h));
+  const data = [];
+  for (let r=1; r<rows.length; r++){
+    const cols = rows[r];
+    if (cols.every(x => safeTrim(x) === "")) continue;
+    const obj = {};
+    for (let c=0; c<headers.length; c++){
+      obj[headers[c]] = cols[c] ?? "";
+    }
+    data.push(obj);
   }
+  return data;
 }
 
-function setFormDisabled(disabled) {
-  const form = document.getElementById("surveyForm");
-  if (!form) return;
-  Array.from(form.elements).forEach(el => {
-    if (el.tagName === "BUTTON" || el.tagName === "INPUT" || el.tagName === "SELECT" || el.tagName === "TEXTAREA") {
-      el.disabled = disabled;
+function destroyCharts(){
+  charts.forEach(c => c.destroy());
+  charts = [];
+}
+
+// ===== OPTION ③: Horizontal bar =====
+function makeBar(canvasId, labels, values){
+  const ctx = document.getElementById(canvasId);
+  const c = new Chart(ctx, {
+    type: "bar",
+    data: { labels, datasets: [{ label: "Total", data: values }] },
+    options: {
+      indexAxis: "y",
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { beginAtZero: true, ticks: { precision: 0 } },
+        y: { ticks: { autoSkip: false } }
+      }
     }
   });
+  charts.push(c);
+  return c;
 }
 
-function encodeCsvRow(rowObj) {
-  const headers = ["timestamp", "language", "player_name", "Q2_time", "Q3_time", "Q4_day"];
-  return headers.map(h => {
-    const v = rowObj[h] ?? "";
-    if (/[",]/.test(v)) {
-      return `"${String(v).replace(/"/g, '""')}"`;
-    }
-    return v;
-  }).join(",");
+function fillRespondents(respondents){
+  tblRespondentsBody.innerHTML = "";
+  respondents.forEach((r, idx) => {
+    const { code, label } = langDisplay(r.language);
+
+    // ★ 表示は「ドット前だけ」
+    const q2Code = displayAnswerCode(r.Q2_time);
+    const q3Code = displayAnswerCode(r.Q3_time);
+    const q4Code = displayAnswerCode(r.Q4_day);
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="num">${idx + 1}</td>
+      <td>${escapeHtml(r.player_name)}</td>
+      <td title="${escapeHtml(label)}">${escapeHtml(code)}</td>
+      <td class="num" title="${escapeHtml(safeTrim(r.Q2_time) || "-")}">${escapeHtml(q2Code)}</td>
+      <td class="num" title="${escapeHtml(safeTrim(r.Q3_time) || "-")}">${escapeHtml(q3Code)}</td>
+      <td class="num" title="${escapeHtml(safeTrim(r.Q4_day) || "-")}">${escapeHtml(q4Code)}</td>
+    `;
+    tblRespondentsBody.appendChild(tr);
+  });
+  elRespondentCount.textContent = String(respondents.length);
 }
 
-function getSelectedLanguageSafe() {
-  const sel = document.getElementById("languageSelect");
-  const v = (sel && sel.value) ? sel.value : currentLang;
-  return (v || "en").toString().trim() || "en";
+function fillTableGeneric(tbodyEl, rows, totalEl){
+  tbodyEl.innerHTML = "";
+  let total = 0;
+  rows.forEach(([k,v]) => {
+    total += Number(v || 0);
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${escapeHtml(k)}</td><td class="num">${v}</td>`;
+    tbodyEl.appendChild(tr);
+  });
+  totalEl.textContent = String(total);
 }
 
-async function handleSubmit(e) {
-  e.preventDefault();
-
-  // ★ 翻訳ロード前は送信禁止（language事故の根絶）
-  if (!isAppReady) {
-    setError("form-error", "Loading languages... Please wait a moment and try again.");
+function setUpdatedByLatestTimestamp(latestTs){
+  if (!latestTs){
+    elLastUpdated.textContent = "Last updated: –";
     return;
   }
+  elLastUpdated.textContent = "Last updated: " + new Date(latestTs).toLocaleString();
+}
 
-  scrollToBottomSmooth();
+async function loadCSV(){
+  const url = CSV_URL + (CSV_URL.includes("?") ? "&" : "?") + "t=" + Date.now();
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error(`CSV fetch failed: ${res.status} ${res.statusText}`);
+  const text = await res.text();
+  const rows = parseCSV(text);
 
-  setError("form-error", "");
-  setError("error-playerName", "");
-  setError("error-q02", "");
-  setError("error-q03", "");
-  setError("error-q04", "");
+  const required = ["timestamp","language","player_name","Q2_time","Q3_time","Q4_day"];
+  const missing = required.filter(k => !(k in (rows[0] || {})));
+  if (missing.length) throw new Error("CSV header missing: " + missing.join(", "));
+  return rows;
+}
 
-  const playerName = document.getElementById("playerName").value.trim();
-  const q02 = getRadioValue("q02");
-  const q03 = getRadioValue("q03");
-  const q04 = getRadioValue("q04");
-
-  let hasError = false;
-  if (!playerName) {
-    setError("error-playerName", "Required / 必須です");
-    hasError = true;
-  }
-  if (!q02) {
-    setError("error-q02", "Please select one option.");
-    hasError = true;
-  }
-  if (!q03) {
-    setError("error-q03", "Please select one option.");
-    hasError = true;
-  }
-  if (!q04) {
-    setError("error-q04", "Please select one option.");
-    hasError = true;
-  }
-  if (hasError) return;
-
-  const timestamp = new Date().toISOString();
-
-  // ★ language は currentLang ではなく select から必ず取る（ズレを潰す）
-  const language = getSelectedLanguageSafe();
-  applyLanguage(language); // 念のため同期
-
-  const row = {
-    timestamp,
-    language,
-    player_name: playerName,
-    Q2_time: q02,
-    Q3_time: q03,
-    Q4_day: q04
-  };
-
-  const csvRow = encodeCsvRow(row);
-
-  // 元HTMLに csvOutput は無いが、元コードに合わせて保持（存在しない場合は何もしない）
-  const output = document.getElementById("csvOutput");
-  if (output) output.value = csvRow;
-
-  setFormDisabled(true);
-
-  try {
-    const res = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(row)
-    });
-
-    if (!res.ok) {
-      console.error("Worker error:", res.status, await res.text());
-      setError("form-error", "Server error. Please try again later.");
-      setFormDisabled(false);
-      return;
+function dedupeLatestByPlayer(rows){
+  const map = new Map();
+  for (const r of rows){
+    const name = safeTrim(r.player_name);
+    if (!name) continue;
+    const ts = parseTimestamp(r.timestamp);
+    const prev = map.get(name);
+    if (!prev || ts > prev._ts || (ts === prev._ts && prev._seq < r._seq)){
+      map.set(name, {
+        timestamp: safeTrim(r.timestamp),
+        language: safeTrim(r.language),
+        player_name: name,
+        Q2_time: safeTrim(r.Q2_time),
+        Q3_time: safeTrim(r.Q3_time),
+        Q4_day: safeTrim(r.Q4_day),
+        _ts: ts,
+        _seq: r._seq,
+      });
     }
+  }
+  const arr = Array.from(map.values());
+  arr.sort((a,b) => (a._ts - b._ts) || (a._seq - b._seq));
+  return arr;
+}
 
-    const data = await res.json().catch(() => ({}));
-    if (!data.ok) {
-      setError("form-error", "API error. Please try again.");
-      setFormDisabled(false);
-      return;
+function countByLabel(items, labelMap, optionsOrder){
+  const counts = new Map();
+  for (const it of items){
+    const canon = canonicalizeAnswer(it, labelMap);
+    if (!canon) continue;
+    counts.set(canon, (counts.get(canon) || 0) + 1);
+  }
+  const orderedLabels = optionsOrder.map(k => labelMap[k]).filter(Boolean);
+  const out = orderedLabels.map(lbl => [lbl, counts.get(lbl) || 0]);
+
+  let otherCount = 0;
+  for (const [k,v] of counts.entries()){
+    if (!orderedLabels.includes(k)) otherCount += v;
+  }
+  if (otherCount > 0) out.push(["Other", otherCount]);
+  return out;
+}
+
+function countLanguages(respondents){
+  const counts = new Map();
+  for (const r of respondents){
+    const code = safeTrim(r.language).toLowerCase();
+    if (!code) continue;
+    counts.set(code, (counts.get(code) || 0) + 1);
+  }
+  const out = [];
+  for (const code of LANGUAGE_ORDER){
+    const n = counts.get(code) || 0;
+    const label = LANGUAGE_LABELS[code] || code;
+    out.push([`${code} ${label}`, n]);
+  }
+  const others = [];
+  for (const [code,n] of counts.entries()){
+    if (!LANGUAGE_ORDER.includes(code)){
+      const label = LANGUAGE_LABELS[code] || code;
+      others.push([`${code} ${label}`, n]);
     }
+  }
+  others.sort((a,b) => b[1]-a[1]);
+  out.push(...others);
+  return out;
+}
 
-    const resultBox = document.getElementById("result");
-    if (resultBox) resultBox.style.display = "block";
+function renderReport(respondents){
+  destroyCharts();
 
-    scrollToBottomSmooth();
-    document.getElementById("surveyForm").reset();
+  const latest = respondents.reduce((m,r) => Math.max(m, r._ts || 0), 0);
+  setUpdatedByLatestTimestamp(latest);
 
-  } catch (err) {
-    console.error("Network error:", err);
-    setError("form-error", "Network error. Please try again.");
-  } finally {
-    setFormDisabled(false);
-    setSubmitEnabled(true);
+  fillRespondents(respondents);
+
+  const q2Rows = countByLabel(respondents.map(r=>r.Q2_time), Q2_TIME_LABELS, ["A","B","C","D"]);
+  fillTableGeneric(tblQ2FirstBody, q2Rows, elQ2FirstTotal);
+  makeBar("chartQ2First", q2Rows.map(x=>x[0]), q2Rows.map(x=>x[1]));
+
+  const q3Rows = countByLabel(respondents.map(r=>r.Q3_time), Q3_TIME_LABELS, ["A","B","C","D","E"]);
+  fillTableGeneric(tblQ3TimeBody, q3Rows, elQ3TimeTotal);
+  makeBar("chartQ3Time", q3Rows.map(x=>x[0]), q3Rows.map(x=>x[1]));
+
+  const q4Rows = countByLabel(respondents.map(r=>r.Q4_day), Q4_DAY_LABELS, ["A","B","C","D","E","F","G","H"]);
+  fillTableGeneric(tblQ4DayBody, q4Rows, elQ4DayTotal);
+  makeBar("chartQ4Day", q4Rows.map(x=>x[0]), q4Rows.map(x=>x[1]));
+
+  const langRows = countLanguages(respondents);
+  fillTableGeneric(tblLangBody, langRows, elLangTotal);
+  makeBar("chartLang", langRows.map(x=>x[0]), langRows.map(x=>x[1]));
+}
+
+function setButtonBusy(isBusy){
+  if (!elBtnRefresh) return;
+  elBtnRefresh.disabled = isBusy;
+  elBtnRefresh.textContent = isBusy ? "Loading..." : "Refresh";
+}
+
+async function refresh(){
+  try{
+    setButtonBusy(true);
+    const rows = await loadCSV();
+    rows.forEach((r, idx) => { r._seq = idx; });
+    const respondents = dedupeLatestByPlayer(rows);
+    renderReport(respondents);
+  }catch(err){
+    console.error(err);
+    destroyCharts();
+    elLastUpdated.textContent = "Error: " + (err?.message || String(err));
+
+    tblRespondentsBody.innerHTML = "";
+    tblQ2FirstBody.innerHTML = "";
+    tblQ3TimeBody.innerHTML = "";
+    tblQ4DayBody.innerHTML = "";
+    tblLangBody.innerHTML = "";
+
+    elRespondentCount.textContent = "0";
+    elQ2FirstTotal.textContent = "0";
+    elQ3TimeTotal.textContent = "0";
+    elQ4DayTotal.textContent  = "0";
+    elLangTotal.textContent   = "0";
+  }finally{
+    setButtonBusy(false);
   }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  const form = document.getElementById("surveyForm");
-  if (form) form.addEventListener("submit", handleSubmit);
+if (elBtnRefresh) elBtnRefresh.addEventListener("click", refresh);
+refresh();
 
-  setSubmitEnabled(false);
-  loadTranslations();
-  wireCdnLink();
-});
+
