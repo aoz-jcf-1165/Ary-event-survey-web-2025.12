@@ -1,21 +1,13 @@
 // ===============================
 // TSC Survey Report - report.js
-// OPTION ①: Short label (A/B/C) + tooltip full label
+// OPTION ③: Horizontal bars (indexAxis:'y')
 // CSV columns:
 // timestamp,language,player_name,Q2_time,Q3_time,Q4_day
 // ===============================
 
-// CSV location (recommended):
-// - repo root: /data/survey.csv
-// - report page: /report/index.html
 const CSV_URL = new URL("../data/survey.csv", location.href).toString();
-
-// If you want to force GitHub Raw URL, you can set it here instead.
-// const CSV_URL = "https://raw.githubusercontent.com/<owner>/<repo>/main/data/survey.csv";
-
 let charts = [];
 
-// ---------- Label maps (for stable ordering & consistent display) ----------
 const Q2_TIME_LABELS = {
   A: "A. Server Time 04:00 - 05:00",
   B: "B. Server Time 13:00 - 14:00",
@@ -42,7 +34,6 @@ const Q4_DAY_LABELS = {
   H: "H. Any day",
 };
 
-// language code -> display
 const LANGUAGE_LABELS = {
   "en": "English",
   "de": "Deutsch",
@@ -65,76 +56,60 @@ const LANGUAGE_LABELS = {
   "id": "Bahasa Indonesia",
 };
 
-// stable order in Language Chosen table
 const LANGUAGE_ORDER = [
   "en","de","nl","fr","ru","es","pt","it","zh-hans","ja","ko","zh-hant","ar","th","vi","tr","pl","ms","id"
 ];
 
-// ---------- DOM ----------
 const elLastUpdated = document.getElementById("lastUpdated");
 const elRespondentCount = document.getElementById("respondentCount");
 const elBtnRefresh = document.getElementById("btnRefresh");
 
-// Tables
 const tblRespondentsBody = document.querySelector("#tblRespondents tbody");
 const tblQ2FirstBody = document.querySelector("#tblQ2First tbody");
 const tblQ3TimeBody  = document.querySelector("#tblQ3Time tbody");
 const tblQ4DayBody   = document.querySelector("#tblQ4Day tbody");
 const tblLangBody    = document.querySelector("#tblLang tbody");
 
-// Totals
 const elQ2FirstTotal = document.getElementById("q2FirstTotal");
 const elQ3TimeTotal  = document.getElementById("q3TimeTotal");
 const elQ4DayTotal   = document.getElementById("q4DayTotal");
 const elLangTotal    = document.getElementById("langTotal");
 
-// ---------- helpers ----------
 function escapeHtml(s){
   return String(s ?? "").replace(/[&<>"']/g, m => ({
     "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
   }[m]));
 }
-
-function safeTrim(s){
-  return String(s ?? "").trim();
-}
-
+function safeTrim(s){ return String(s ?? "").trim(); }
 function parseTimestamp(ts){
   const t = Date.parse(ts);
   return Number.isFinite(t) ? t : 0;
 }
-
-// Extract leading option letter: "A", "A.", "A. xxx", "A xxx"
 function extractLeadingLetter(value){
   const s = safeTrim(value);
   if (!s) return "";
   const m = s.match(/^([A-Za-z])(?:[\.\s]|$)/);
   return m ? m[1].toUpperCase() : "";
 }
-
 function canonicalizeAnswer(value, labelMap){
   const s = safeTrim(value);
   if (!s) return "";
   const letter = extractLeadingLetter(s);
   if (letter && labelMap[letter]) return labelMap[letter];
 
-  // If user stores full label already and it matches one of the labels, keep it.
   const normalized = s.replace(/\s+/g, " ").trim();
   const mapValues = Object.values(labelMap);
   const found = mapValues.find(v => v.replace(/\s+/g, " ").trim() === normalized);
   if (found) return found;
 
-  // Otherwise keep as-is (but may end up in "Other")
   return normalized;
 }
-
 function langDisplay(langCodeRaw){
   const code = safeTrim(langCodeRaw).toLowerCase();
   const label = LANGUAGE_LABELS[code] || (code ? code : "—");
   return { code: code || "—", label };
 }
 
-// RFC4180-ish CSV parser (handles quotes, commas, newlines)
 function parseCSV(text){
   const rows = [];
   let row = [];
@@ -163,51 +138,26 @@ function parseCSV(text){
         continue;
       }
     } else {
-      if (c === '"'){
-        inQuotes = true;
-        i++;
-        continue;
-      }
-      if (c === ","){
-        row.push(field);
-        field = "";
-        i++;
-        continue;
-      }
-      if (c === "\r"){
-        i++;
-        continue;
-      }
-      if (c === "\n"){
-        row.push(field);
-        field = "";
-        rows.push(row);
-        row = [];
-        i++;
-        continue;
-      }
-      field += c;
-      i++;
+      if (c === '"'){ inQuotes = true; i++; continue; }
+      if (c === ","){ row.push(field); field=""; i++; continue; }
+      if (c === "\r"){ i++; continue; }
+      if (c === "\n"){ row.push(field); field=""; rows.push(row); row=[]; i++; continue; }
+      field += c; i++;
     }
   }
   row.push(field);
   rows.push(row);
 
-  // Remove trailing empty row
-  while (rows.length && rows[rows.length-1].every(x => safeTrim(x) === "")) {
-    rows.pop();
-  }
+  while (rows.length && rows[rows.length-1].every(x => safeTrim(x) === "")) rows.pop();
   if (!rows.length) return [];
 
   const headers = rows[0].map(h => safeTrim(h));
   const data = [];
-
-  for (let r = 1; r < rows.length; r++){
+  for (let r=1; r<rows.length; r++){
     const cols = rows[r];
     if (cols.every(x => safeTrim(x) === "")) continue;
-
     const obj = {};
-    for (let c = 0; c < headers.length; c++){
+    for (let c=0; c<headers.length; c++){
       obj[headers[c]] = cols[c] ?? "";
     }
     data.push(obj);
@@ -220,32 +170,20 @@ function destroyCharts(){
   charts = [];
 }
 
-// ===== OPTION ①: Short labels on axis, full labels in tooltip =====
+// ===== OPTION ③: Horizontal bar =====
 function makeBar(canvasId, labels, values){
-  const shortLabels = labels.map(l => {
-    const m = String(l).match(/^([A-Z])\./);
-    return m ? m[1] : l;
-  });
-
   const ctx = document.getElementById(canvasId);
   const c = new Chart(ctx, {
     type: "bar",
-    data: { labels: shortLabels, datasets: [{ label: "Total", data: values }] },
+    data: { labels, datasets: [{ label: "Total", data: values }] },
     options: {
+      indexAxis: "y",
       responsive: true,
       maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            title: (items) => labels[items[0].dataIndex],
-            label: (item) => ` ${item.formattedValue}`
-          }
-        }
-      },
+      plugins: { legend: { display: false } },
       scales: {
-        x: { ticks: { autoSkip: false } },
-        y: { beginAtZero: true, ticks: { precision: 0 } }
+        x: { beginAtZero: true, ticks: { precision: 0 } },
+        y: { ticks: { autoSkip: false } }
       }
     }
   });
@@ -285,38 +223,29 @@ function setUpdatedByLatestTimestamp(latestTs){
     elLastUpdated.textContent = "Last updated: –";
     return;
   }
-  const d = new Date(latestTs);
-  elLastUpdated.textContent = "Last updated: " + d.toLocaleString();
+  elLastUpdated.textContent = "Last updated: " + new Date(latestTs).toLocaleString();
 }
 
-// ---------- core: fetch -> parse -> dedupe -> aggregate -> render ----------
 async function loadCSV(){
   const url = CSV_URL + (CSV_URL.includes("?") ? "&" : "?") + "t=" + Date.now();
   const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok){
-    throw new Error(`CSV fetch failed: ${res.status} ${res.statusText}`);
-  }
+  if (!res.ok) throw new Error(`CSV fetch failed: ${res.status} ${res.statusText}`);
   const text = await res.text();
   const rows = parseCSV(text);
 
   const required = ["timestamp","language","player_name","Q2_time","Q3_time","Q4_day"];
   const missing = required.filter(k => !(k in (rows[0] || {})));
-  if (missing.length){
-    throw new Error("CSV header missing: " + missing.join(", "));
-  }
+  if (missing.length) throw new Error("CSV header missing: " + missing.join(", "));
   return rows;
 }
 
 function dedupeLatestByPlayer(rows){
   const map = new Map();
-
   for (const r of rows){
     const name = safeTrim(r.player_name);
     if (!name) continue;
-
     const ts = parseTimestamp(r.timestamp);
     const prev = map.get(name);
-
     if (!prev || ts > prev._ts || (ts === prev._ts && prev._seq < r._seq)){
       map.set(name, {
         timestamp: safeTrim(r.timestamp),
@@ -330,7 +259,6 @@ function dedupeLatestByPlayer(rows){
       });
     }
   }
-
   const arr = Array.from(map.values());
   arr.sort((a,b) => (a._ts - b._ts) || (a._seq - b._seq));
   return arr;
@@ -338,13 +266,11 @@ function dedupeLatestByPlayer(rows){
 
 function countByLabel(items, labelMap, optionsOrder){
   const counts = new Map();
-
   for (const it of items){
     const canon = canonicalizeAnswer(it, labelMap);
     if (!canon) continue;
     counts.set(canon, (counts.get(canon) || 0) + 1);
   }
-
   const orderedLabels = optionsOrder.map(k => labelMap[k]).filter(Boolean);
   const out = orderedLabels.map(lbl => [lbl, counts.get(lbl) || 0]);
 
@@ -352,9 +278,7 @@ function countByLabel(items, labelMap, optionsOrder){
   for (const [k,v] of counts.entries()){
     if (!orderedLabels.includes(k)) otherCount += v;
   }
-  if (otherCount > 0){
-    out.push(["Other", otherCount]);
-  }
+  if (otherCount > 0) out.push(["Other", otherCount]);
   return out;
 }
 
@@ -365,14 +289,12 @@ function countLanguages(respondents){
     if (!code) continue;
     counts.set(code, (counts.get(code) || 0) + 1);
   }
-
   const out = [];
   for (const code of LANGUAGE_ORDER){
     const n = counts.get(code) || 0;
     const label = LANGUAGE_LABELS[code] || code;
     out.push([`${code} ${label}`, n]);
   }
-
   const others = [];
   for (const [code,n] of counts.entries()){
     if (!LANGUAGE_ORDER.includes(code)){
@@ -380,9 +302,8 @@ function countLanguages(respondents){
       others.push([`${code} ${label}`, n]);
     }
   }
-  others.sort((a,b) => b[1] - a[1]);
+  others.sort((a,b) => b[1]-a[1]);
   out.push(...others);
-
   return out;
 }
 
@@ -394,27 +315,15 @@ function renderReport(respondents){
 
   fillRespondents(respondents);
 
-  const q2Rows = countByLabel(
-    respondents.map(r => r.Q2_time),
-    Q2_TIME_LABELS,
-    ["A","B","C","D"]
-  );
+  const q2Rows = countByLabel(respondents.map(r=>r.Q2_time), Q2_TIME_LABELS, ["A","B","C","D"]);
   fillTableGeneric(tblQ2FirstBody, q2Rows, elQ2FirstTotal);
   makeBar("chartQ2First", q2Rows.map(x=>x[0]), q2Rows.map(x=>x[1]));
 
-  const q3Rows = countByLabel(
-    respondents.map(r => r.Q3_time),
-    Q3_TIME_LABELS,
-    ["A","B","C","D","E"]
-  );
+  const q3Rows = countByLabel(respondents.map(r=>r.Q3_time), Q3_TIME_LABELS, ["A","B","C","D","E"]);
   fillTableGeneric(tblQ3TimeBody, q3Rows, elQ3TimeTotal);
   makeBar("chartQ3Time", q3Rows.map(x=>x[0]), q3Rows.map(x=>x[1]));
 
-  const q4Rows = countByLabel(
-    respondents.map(r => r.Q4_day),
-    Q4_DAY_LABELS,
-    ["A","B","C","D","E","F","G","H"]
-  );
+  const q4Rows = countByLabel(respondents.map(r=>r.Q4_day), Q4_DAY_LABELS, ["A","B","C","D","E","F","G","H"]);
   fillTableGeneric(tblQ4DayBody, q4Rows, elQ4DayTotal);
   makeBar("chartQ4Day", q4Rows.map(x=>x[0]), q4Rows.map(x=>x[1]));
 
@@ -432,16 +341,13 @@ function setButtonBusy(isBusy){
 async function refresh(){
   try{
     setButtonBusy(true);
-
     const rows = await loadCSV();
     rows.forEach((r, idx) => { r._seq = idx; });
-
     const respondents = dedupeLatestByPlayer(rows);
     renderReport(respondents);
   }catch(err){
     console.error(err);
     destroyCharts();
-
     elLastUpdated.textContent = "Error: " + (err?.message || String(err));
 
     tblRespondentsBody.innerHTML = "";
@@ -460,8 +366,5 @@ async function refresh(){
   }
 }
 
-if (elBtnRefresh){
-  elBtnRefresh.addEventListener("click", refresh);
-}
-
+if (elBtnRefresh) elBtnRefresh.addEventListener("click", refresh);
 refresh();
