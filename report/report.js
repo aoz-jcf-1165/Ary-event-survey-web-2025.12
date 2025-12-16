@@ -1,6 +1,6 @@
 // ===============================
 // TSC Survey Report - report.js
-// Horizontal bars (indexAxis:'y')
+// Respondents table: add Q2/Q3/Q4 badges (A-H)
 // CSV columns:
 // timestamp,language,player_name,Q2_time,Q3_time,Q4_day
 // ===============================
@@ -80,24 +80,55 @@ function escapeHtml(s){
     "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
   }[m]));
 }
-function safeTrim(s){ return String(s ?? "").trim(); }
+
+/** remove BOM/zero-width/nbsp and trim */
+function normalizeText(x){
+  let s = String(x ?? "");
+  // BOM
+  s = s.replace(/^\uFEFF/, "");
+  // zero-width characters
+  s = s.replace(/[\u200B-\u200D\u2060]/g, "");
+  // NBSP -> space
+  s = s.replace(/\u00A0/g, " ");
+  return s.trim();
+}
+
 function parseTimestamp(ts){
   const t = Date.parse(ts);
   return Number.isFinite(t) ? t : 0;
 }
 
-// Extract leading A/B/C... from "A. xxx" or "A xxx"
+/** Convert fullwidth A-Z to ASCII A-Z */
+function toAsciiLetter(ch){
+  const code = ch.charCodeAt(0);
+  // Ａ..Ｚ (FF21..FF3A) / ａ..ｚ (FF41..FF5A)
+  if (code >= 0xFF21 && code <= 0xFF3A) return String.fromCharCode(code - 0xFF21 + 0x41);
+  if (code >= 0xFF41 && code <= 0xFF5A) return String.fromCharCode(code - 0xFF41 + 0x61);
+  return ch;
+}
+
+// Extract leading A/B/C... from "A. xxx", "A xxx", "Ａ．xxx" etc.
 function extractLeadingLetter(value){
-  const s = safeTrim(value);
-  if (!s) return "";
-  const m = s.match(/^([A-Za-z])(?:[\.\s]|$)/);
+  const raw = normalizeText(value);
+  if (!raw) return "";
+
+  const first = toAsciiLetter(raw[0]);
+  const rest = raw.slice(1);
+
+  // accept ".", "．"(fullwidth), space
+  if (/^[A-Za-z]$/.test(first) && (/^[\.\s]/.test(rest) || rest.startsWith("．") || rest === "")){
+    return first.toUpperCase();
+  }
+
+  // fallback regex (after basic normalization)
+  const m = raw.match(/^([A-Za-z])(?:[\.\s]|$)/);
   return m ? m[1].toUpperCase() : "";
 }
 
-// Normalize answers: accept both "A. ..." and full label text
 function canonicalizeAnswer(value, labelMap){
-  const s = safeTrim(value);
+  const s = normalizeText(value);
   if (!s) return "";
+
   const letter = extractLeadingLetter(s);
   if (letter && labelMap[letter]) return labelMap[letter];
 
@@ -110,7 +141,7 @@ function canonicalizeAnswer(value, labelMap){
 }
 
 function langDisplay(langCodeRaw){
-  const code = safeTrim(langCodeRaw).toLowerCase();
+  const code = normalizeText(langCodeRaw).toLowerCase();
   const label = LANGUAGE_LABELS[code] || (code ? code : "—");
   return { code: code || "—", label };
 }
@@ -153,14 +184,14 @@ function parseCSV(text){
   row.push(field);
   rows.push(row);
 
-  while (rows.length && rows[rows.length-1].every(x => safeTrim(x) === "")) rows.pop();
+  while (rows.length && rows[rows.length-1].every(x => normalizeText(x) === "")) rows.pop();
   if (!rows.length) return [];
 
-  const headers = rows[0].map(h => safeTrim(h));
+  const headers = rows[0].map(h => normalizeText(h));
   const data = [];
   for (let r=1; r<rows.length; r++){
     const cols = rows[r];
-    if (cols.every(x => safeTrim(x) === "")) continue;
+    if (cols.every(x => normalizeText(x) === "")) continue;
     const obj = {};
     for (let c=0; c<headers.length; c++){
       obj[headers[c]] = cols[c] ?? "";
@@ -175,7 +206,6 @@ function destroyCharts(){
   charts = [];
 }
 
-// Horizontal bar chart
 function makeBar(canvasId, labels, values){
   const ctx = document.getElementById(canvasId);
   const c = new Chart(ctx, {
@@ -198,7 +228,7 @@ function makeBar(canvasId, labels, values){
 
 // Create colored option badge HTML for A-H
 function optionBadge(letter){
-  const L = safeTrim(letter).toUpperCase();
+  const L = normalizeText(letter).toUpperCase();
   if (!L) return `<span class="opt is-empty">—</span>`;
   const cls = /^[A-H]$/.test(L) ? `opt opt-${L}` : `opt`;
   return `<span class="${cls}" title="${escapeHtml(L)}">${escapeHtml(L)}</span>`;
@@ -209,7 +239,6 @@ function fillRespondents(respondents){
   respondents.forEach((r, idx) => {
     const { code, label } = langDisplay(r.language);
 
-    // Q2/Q3/Q4: show only leading letter (A-H...) and color-code it
     const q2L = extractLeadingLetter(r.Q2_time);
     const q3L = extractLeadingLetter(r.Q3_time);
     const q4L = extractLeadingLetter(r.Q4_day);
@@ -261,22 +290,21 @@ async function loadCSV(){
   return rows;
 }
 
-// Deduplicate by latest timestamp per player_name
 function dedupeLatestByPlayer(rows){
   const map = new Map();
   for (const r of rows){
-    const name = safeTrim(r.player_name);
+    const name = normalizeText(r.player_name);
     if (!name) continue;
     const ts = parseTimestamp(r.timestamp);
     const prev = map.get(name);
     if (!prev || ts > prev._ts || (ts === prev._ts && prev._seq < r._seq)){
       map.set(name, {
-        timestamp: safeTrim(r.timestamp),
-        language: safeTrim(r.language),
+        timestamp: normalizeText(r.timestamp),
+        language: normalizeText(r.language),
         player_name: name,
-        Q2_time: safeTrim(r.Q2_time),
-        Q3_time: safeTrim(r.Q3_time),
-        Q4_day: safeTrim(r.Q4_day),
+        Q2_time: normalizeText(r.Q2_time),
+        Q3_time: normalizeText(r.Q3_time),
+        Q4_day: normalizeText(r.Q4_day),
         _ts: ts,
         _seq: r._seq,
       });
@@ -308,7 +336,7 @@ function countByLabel(items, labelMap, optionsOrder){
 function countLanguages(respondents){
   const counts = new Map();
   for (const r of respondents){
-    const code = safeTrim(r.language).toLowerCase();
+    const code = normalizeText(r.language).toLowerCase();
     if (!code) continue;
     counts.set(code, (counts.get(code) || 0) + 1);
   }
