@@ -85,12 +85,23 @@ function parseTimestamp(ts){
   const t = Date.parse(ts);
   return Number.isFinite(t) ? t : 0;
 }
+
+// ★ ここが要：ドット前のコード抽出（A/B/C...）
+// 例: "A. xxx" → "A", "A xxx" → "A", "A" → "A"
 function extractLeadingLetter(value){
   const s = safeTrim(value);
   if (!s) return "";
   const m = s.match(/^([A-Za-z])(?:[\.\s]|$)/);
   return m ? m[1].toUpperCase() : "";
 }
+
+// ★ Respondents 表示用：必ず「ドット前だけ」に寄せる
+function displayAnswerCode(value){
+  const code = extractLeadingLetter(value);
+  // 既に "A" だけ入っている場合も code で拾える。拾えなければ "-"。
+  return code || "-";
+}
+
 function canonicalizeAnswer(value, labelMap){
   const s = safeTrim(value);
   if (!s) return "";
@@ -104,6 +115,7 @@ function canonicalizeAnswer(value, labelMap){
 
   return normalized;
 }
+
 function langDisplay(langCodeRaw){
   const code = safeTrim(langCodeRaw).toLowerCase();
   const label = LANGUAGE_LABELS[code] || (code ? code : "—");
@@ -195,11 +207,20 @@ function fillRespondents(respondents){
   tblRespondentsBody.innerHTML = "";
   respondents.forEach((r, idx) => {
     const { code, label } = langDisplay(r.language);
+
+    // ★ 表示は「ドット前だけ」
+    const q2Code = displayAnswerCode(r.Q2_time);
+    const q3Code = displayAnswerCode(r.Q3_time);
+    const q4Code = displayAnswerCode(r.Q4_day);
+
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td class="num">${idx + 1}</td>
       <td>${escapeHtml(r.player_name)}</td>
       <td title="${escapeHtml(label)}">${escapeHtml(code)}</td>
+      <td class="num" title="${escapeHtml(safeTrim(r.Q2_time) || "-")}">${escapeHtml(q2Code)}</td>
+      <td class="num" title="${escapeHtml(safeTrim(r.Q3_time) || "-")}">${escapeHtml(q3Code)}</td>
+      <td class="num" title="${escapeHtml(safeTrim(r.Q4_day) || "-")}">${escapeHtml(q4Code)}</td>
     `;
     tblRespondentsBody.appendChild(tr);
   });
@@ -358,9 +379,9 @@ async function refresh(){
 
     elRespondentCount.textContent = "0";
     elQ2FirstTotal.textContent = "0";
-    elQ3TimeTotal.textContent  = "0";
-    elQ4DayTotal.textContent   = "0";
-    elLangTotal.textContent    = "0";
+    elQ3TimeTotal.textContent = "0";
+    elQ4DayTotal.textContent  = "0";
+    elLangTotal.textContent   = "0";
   }finally{
     setButtonBusy(false);
   }
