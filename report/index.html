@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TSC Event Survey - Report</title>
+  <link rel="stylesheet" href="./report.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <div>
+        <div class="title">TSC Event Survey – 2025.12</div>
+        <div class="sub">Auto report from GitHub CSV</div>
+      </div>
+      <div class="meta">
+        <div class="badge" id="lastUpdated">Last updated: –</div>
+        <button class="btn" id="btnRefresh">Refresh</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap grid">
+    <!-- Left: Respondents -->
+    <aside class="side">
+      <details class="card" open>
+        <summary class="card-head">
+          <h2>Respondents</h2>
+          <span class="muted" id="respondentCount">0</span>
+        </summary>
+        <div class="card-body">
+          <div class="table-wrap">
+            <table class="table" id="tblRespondents">
+              <thead>
+                <tr>
+                  <th style="width:56px;">No</th>
+                  <th>Name</th>
+                  <th style="width:120px;">Lang</th>
+                </tr>
+              </thead>
+              <tbody><!-- injected --></tbody>
+            </table>
+          </div>
+          <div class="hint">
+            Same player name re-submissions can be de-duplicated to the latest entry.
+          </div>
+        </div>
+      </details>
+    </aside>
+
+    <!-- Right: Sections -->
+    <section class="maincol">
+      <!-- Card template: Table + Chart -->
+      <section class="card">
+        <div class="card-head">
+          <h2>Polar Invasion / Wasteland Showdown</h2>
+          <span class="muted">Q2 First preferred time</span>
+        </div>
+        <div class="card-body split">
+          <div>
+            <div class="table-wrap">
+              <table class="table" id="tblQ2First">
+                <thead><tr><th>Time slot</th><th class="num">Total</th></tr></thead>
+                <tbody></tbody>
+                <tfoot><tr><th>Total</th><th class="num" id="q2FirstTotal">0</th></tr></tfoot>
+              </table>
+            </div>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="chartQ2First"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>Elite War / Doom Arena / Zombie Uprize</h2>
+          <span class="muted">Q3 First preferred time</span>
+        </div>
+        <div class="card-body split">
+          <div class="table-wrap">
+            <table class="table" id="tblQ3Time">
+              <thead><tr><th>Time slot</th><th class="num">Total</th></tr></thead>
+              <tbody></tbody>
+              <tfoot><tr><th>Total</th><th class="num" id="q3TimeTotal">0</th></tr></tfoot>
+            </table>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="chartQ3Time"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>Elite War / Doom Arena / Zombie Uprize</h2>
+          <span class="muted">Q4 First preferred day</span>
+        </div>
+        <div class="card-body split">
+          <div class="table-wrap">
+            <table class="table" id="tblQ4Day">
+              <thead><tr><th>Day</th><th class="num">Total</th></tr></thead>
+              <tbody></tbody>
+              <tfoot><tr><th>Total</th><th class="num" id="q4DayTotal">0</th></tr></tfoot>
+            </table>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="chartQ4Day"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>Language chosen</h2>
+          <span class="muted">Respondent language</span>
+        </div>
+        <div class="card-body split">
+          <div class="table-wrap">
+            <table class="table" id="tblLang">
+              <thead><tr><th>Language</th><th class="num">Total</th></tr></thead>
+              <tbody></tbody>
+              <tfoot><tr><th>Total</th><th class="num" id="langTotal">0</th></tr></tfoot>
+            </table>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="chartLang"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <button class="btn ghost" onclick="window.print()">Print / Save PDF</button>
+      </footer>
+    </section>
+  </main>
+
+  <script src="./report.js"></script>
+</body>
+</html>
