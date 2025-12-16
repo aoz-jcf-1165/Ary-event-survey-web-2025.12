@@ -323,6 +323,13 @@
       box-shadow: 0 6px 14px rgba(37, 99, 235, 0.6);
     }
 
+    button[disabled] {
+      opacity: 0.55;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
+    }
+
     .error {
       color: var(--danger);
       font-size: 11px;
@@ -346,7 +353,6 @@
       color: var(--text-muted);
     }
 
-    /* ===== Added: PDF link card ===== */
     .link-card {
       margin: 10px 0 16px;
       padding: 12px;
@@ -380,18 +386,6 @@
     .link-btn:hover {
       border-color: rgba(56, 189, 248, 0.7);
       background: rgba(2, 6, 23, 0.8);
-    }
-
-    .link-btn-primary {
-      border: none;
-      background: radial-gradient(circle at top left, #38bdf8, #4f46e5);
-      color: #0b1120;
-      box-shadow: 0 12px 30px rgba(37, 99, 235, 0.7);
-      font-weight: 700;
-    }
-
-    .link-btn-primary:hover {
-      box-shadow: 0 14px 34px rgba(37, 99, 235, 0.75);
     }
 
     @media (min-width: 640px) {
@@ -435,7 +429,6 @@
             </span>
           </div>
 
-          <!-- ===== Added: PDF / Documents section ===== -->
           <div class="link-card">
             <div class="notice" style="margin-bottom:10px;">
               <span class="notice-dot"></span>
@@ -447,31 +440,21 @@
             </div>
 
             <div class="link-row">
-              <!-- share_document page -->
-              <!-- <a class="link-btn link-btn-primary" href="./share_document/" target="_blank" rel="noopener">
-                📄 <span data-i18n="doc_btn_page">Open Document Page</span>
-              </a> -->
-
-              <!-- GitHub Pages direct PDF -->
               <a class="link-btn" href="./share_document/TSC-event-survey-2025-12.pdf" target="_blank" rel="noopener noreferrer">
                 🔗 <span data-i18n="doc_btn_pdf">Open PDF</span>
               </a>
 
-              <!-- CDN direct PDF (works even if github.io is blocked) -->
               <a class="link-btn" id="cdnPdfLink" href="#" target="_blank" rel="noopener noreferrer">
                 🌐 <span data-i18n="doc_btn_cdn">CDN PDF Link</span>
               </a>
             </div>
-        
+
             <div class="helper" style="margin-top:8px;">
               <span data-i18n="doc_cdn_note">Please note that CDN cache updates may take time, and it may take a while before the latest version of the file is reflected.</span>
             </div>
-          
-      
-          <!-- ===== End Added ===== -->
+          </div>
 
           <form id="surveyForm">
-            <!-- Q01 -->
             <div class="question">
               <div class="section-label notice">
                 <span class="notice-dot"></span>
@@ -495,14 +478,12 @@
                 />
               </div>
               <div id="error-playerName" class="error" style="display:none;"></div>
-              
+
               <div class="helper" style="margin-top:8px;">
                 <span data-i18n="answer_update_note">If you would like to update your answers, please resubmit the survey using the same player name. Your most recent response will be used.</span>
               </div>
-                          
             </div>
 
-            <!-- Q02 -->
             <div class="question">
               <div class="tsc-image-02">
                 <img src="tsc-banner-02.png" alt="tsc-banner-02.png" />
@@ -547,7 +528,6 @@
               <div id="error-q02" class="error" style="display:none;"></div>
             </div>
 
-            <!-- Q03 -->
             <div class="question">
               <div class="tsc-image-03">
                 <img src="tsc-banner-03.png" alt="tsc-banner-03.png" />
@@ -601,7 +581,6 @@
               <div id="error-q03" class="error" style="display:none;"></div>
             </div>
 
-            <!-- Q04 -->
             <div class="question">
               <div class="section-label notice">
                 <span class="notice-dot"></span>
@@ -677,7 +656,7 @@
             </div>
 
             <div class="submit-row">
-              <button type="submit">
+              <button id="submitBtn" type="submit" disabled>
                 <span data-i18n="btn_submit">Submit</span>
                 <span>➤</span>
               </button>
@@ -709,11 +688,9 @@
   // ==== 多言語翻訳設定 ====
   const TRANSLATION_FILE = "translations.tsv";
 
-  // ===== Added: CDN PDF link (works even if github.io blocked) =====
-  // repo: aoz-jcf-1165/TSC-event-survey-web-2025.12
+  // ===== CDN PDF link =====
   const CDN_PDF_URL =
     "https://cdn.jsdelivr.net/gh/aoz-jcf-1165/TSC-event-survey-web-2025.12@main/share_document/TSC-event-survey-2025-12.pdf";
-  // ===============================================================
 
   const LANGUAGE_LABELS = {
     "en": "English",
@@ -739,7 +716,12 @@
 
   let translations = {};
   let availableLangs = [];
-  let currentLang = "en";
+
+  // ★ 言語は localStorage を優先（無ければ en）
+  let currentLang = (localStorage.getItem("tsc_lang") || "en").trim() || "en";
+
+  // ★ 翻訳ロード完了フラグ（未完了なら送信禁止）
+  let isAppReady = false;
 
   function parseTSV(text) {
     const lines = text.split(/\r?\n/).filter(l => l.trim() !== "");
@@ -768,9 +750,12 @@
   }
 
   function applyLanguage(lang) {
-    currentLang = lang;
-    document.documentElement.lang = lang;
-    document.documentElement.dir = (lang === "ar") ? "rtl" : "ltr";
+    // ★ 正規化（小文字 + trim）
+    currentLang = (lang || "en").toString().trim() || "en";
+    localStorage.setItem("tsc_lang", currentLang);
+
+    document.documentElement.lang = currentLang;
+    document.documentElement.dir = (currentLang === "ar") ? "rtl" : "ltr";
 
     document.querySelectorAll("[data-i18n]").forEach(el => {
       const key = el.dataset.i18n;
@@ -787,9 +772,12 @@
   function populateLanguageSelect() {
     const select = document.getElementById("languageSelect");
     if (!select) return;
-    select.innerHTML = "";
 
+    select.innerHTML = "";
     const ordered = ["en", ...availableLangs.filter(l => l !== "en")];
+
+    // currentLang が TSV に存在しない場合は en に戻す
+    if (!availableLangs.includes(currentLang)) currentLang = "en";
 
     ordered.forEach(code => {
       if (!availableLangs.includes(code)) return;
@@ -805,32 +793,40 @@
     });
   }
 
+  function wireCdnLink() {
+    const a = document.getElementById("cdnPdfLink");
+    if (a) a.href = CDN_PDF_URL;
+  }
+
+  function setSubmitEnabled(enabled) {
+    const btn = document.getElementById("submitBtn");
+    if (btn) btn.disabled = !enabled;
+  }
+
   async function loadTranslations() {
     try {
-      const res = await fetch(TRANSLATION_FILE);
+      wireCdnLink();
+
+      const res = await fetch(TRANSLATION_FILE, { cache: "no-store" });
       if (!res.ok) {
         console.error("Failed to load translations.tsv");
-        // even if translations not available, still wire CDN link
-        wireCdnLink();
+        // 翻訳がなくても動かすが、言語選択が壊れるので送信は許可しない（事故防止）
+        setSubmitEnabled(false);
         return;
       }
       const text = await res.text();
       parseTSV(text);
       populateLanguageSelect();
       applyLanguage(currentLang);
-      wireCdnLink();
+
+      isAppReady = true;
+      setSubmitEnabled(true);
     } catch (e) {
       console.error("Error loading translations:", e);
-      wireCdnLink();
+      setSubmitEnabled(false);
     }
   }
 
-  function wireCdnLink() {
-    const a = document.getElementById("cdnPdfLink");
-    if (a) a.href = CDN_PDF_URL;
-  }
-
-  // ==== フォーム送信まわり ====
   function scrollToBottomSmooth() {
     requestAnimationFrame(() => {
       window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
@@ -875,8 +871,20 @@
     }).join(",");
   }
 
+  function getSelectedLanguageSafe() {
+    const sel = document.getElementById("languageSelect");
+    const v = (sel && sel.value) ? sel.value : currentLang;
+    return (v || "en").toString().trim() || "en";
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
+
+    // ★ 翻訳ロード前は送信禁止（language事故の根絶）
+    if (!isAppReady) {
+      setError("form-error", "Loading languages... Please wait a moment and try again.");
+      return;
+    }
 
     scrollToBottomSmooth();
 
@@ -912,9 +920,13 @@
 
     const timestamp = new Date().toISOString();
 
+    // ★ language は currentLang ではなく select から必ず取る（ズレを潰す）
+    const language = getSelectedLanguageSafe();
+    applyLanguage(language); // 念のため同期
+
     const row = {
       timestamp,
-      language: currentLang,
+      language,
       player_name: playerName,
       Q2_time: q02,
       Q3_time: q03,
@@ -952,7 +964,6 @@
       if (resultBox) resultBox.style.display = "block";
 
       scrollToBottomSmooth();
-
       document.getElementById("surveyForm").reset();
 
     } catch (err) {
@@ -960,14 +971,17 @@
       setError("form-error", "Network error. Please try again.");
     } finally {
       setFormDisabled(false);
+      setSubmitEnabled(true);
     }
   }
 
   document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("surveyForm");
     if (form) form.addEventListener("submit", handleSubmit);
+
+    setSubmitEnabled(false);
     loadTranslations();
-    wireCdnLink(); // safety
+    wireCdnLink();
   });
   </script>
 
