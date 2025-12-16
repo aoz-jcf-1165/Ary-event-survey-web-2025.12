@@ -9,7 +9,6 @@
   --radius:16px;
   --shadow: 0 10px 30px rgba(0,0,0,.35);
 
-  /* Option badge colors (A-H) */
   --optA: rgba(110,168,254,.22);
   --optB: rgba(130,87,229,.22);
   --optC: rgba(50,205,180,.20);
@@ -23,7 +22,6 @@
 *{box-sizing:border-box}
 html,body{height:100%}
 
-/* --- Important: avoid mobile "seam" by using a fixed background layer --- */
 html{
   background: var(--bg);
   color:var(--text);
@@ -31,33 +29,28 @@ html{
 
 body{
   margin:0;
-  min-height:100svh; /* mobile safe viewport height */
+  min-height:100svh;
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans", "Helvetica Neue", Arial, "Apple Color Emoji","Segoe UI Emoji";
-  background: transparent; /* background handled by ::before */
+  background: transparent;
   color:var(--text);
   position: relative;
   overflow-x: hidden;
 }
 
-/* Fixed gradient layer that covers the entire viewport (prevents repeat seams) */
 body::before{
   content:"";
   position: fixed;
   inset: 0;
   z-index: -1;
   pointer-events: none;
-
-  /* One continuous background */
   background:
     radial-gradient(1200px 600px at 10% 0%, rgba(110,168,254,.18), transparent 55%),
     radial-gradient(800px 500px at 90% 20%, rgba(130,87,229,.16), transparent 55%),
     var(--bg);
-
   background-repeat: no-repeat;
-  background-size: cover; /* ensures full coverage */
+  background-size: cover;
 }
 
-/* Optional very subtle overlay to hide any banding on some displays */
 body::after{
   content:"";
   position: fixed;
@@ -172,11 +165,10 @@ body::after{
   background:rgba(15,20,34,.55)
 }
 
-/* IMPORTANT: allow shrinking to fit container */
 .table{
   width:100%;
   border-collapse:collapse;
-  min-width:0; /* was 320px; keeping 0 prevents overflow on mobile */
+  min-width:0;
 }
 
 .table th,.table td{
@@ -197,18 +189,13 @@ body::after{
 .table tfoot th,.table tfoot td{font-weight:800;background:rgba(18,24,39,.65)}
 .table tfoot tr{border-top:1px solid var(--line)}
 
-/* ================================
-   Respondents table: responsive fit
-   - No column is ALWAYS visible
-   - Name auto-scales down when long
-   - Keep overall width aligned (no layout break)
-   ================================ */
+/* Respondents: fixed layout so it always fits */
 .table-respondents{
-  table-layout: fixed; /* critical: force columns to fit */
+  table-layout: fixed;
   width: 100%;
-  min-width: 0;
 }
 
+/* Compact + ellipsis */
 .table-respondents th,
 .table-respondents td{
   white-space: nowrap;
@@ -216,28 +203,39 @@ body::after{
   text-overflow: ellipsis;
 }
 
-/* Ensure No column stays visible (explicit) */
+/* No column: minimal width */
 .table-respondents th:nth-child(1),
 .table-respondents td:nth-child(1){
-  display: table-cell !important;
+  width: 2.4em;                /* minimal but readable */
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  padding-left:8px;
+  padding-right:8px;
 }
 
-/* Name column: default (desktop/tablet) */
+/* Name column: clickable */
 .table-respondents td:nth-child(2){
-  font-size: 13px;
-  line-height: 1.25;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  cursor: pointer;
 }
 
-/* Lang column: compact */
-.table-respondents th:nth-child(3),
-.table-respondents td:nth-child(3){
-  white-space: nowrap;
+/* Sortable headers */
+.th-sort{
+  cursor: pointer;
+  user-select:none;
 }
+.th-sort:hover{
+  color: rgba(233,237,246,.95);
+}
+.sort-ind{
+  display:inline-block;
+  width: 1.1em;
+  text-align:center;
+  opacity:.85;
+}
+.th-sort.is-asc .sort-ind::before{ content:"▲"; }
+.th-sort.is-desc .sort-ind::before{ content:"▼"; }
 
-/* Option badge (A-H) */
+/* Option badge */
 .opt{
   display:inline-flex;
   align-items:center;
@@ -252,10 +250,7 @@ body::after{
   line-height:1;
   user-select:none;
 }
-.opt.is-empty{
-  opacity:.6;
-  font-weight:700;
-}
+.opt.is-empty{opacity:.6;font-weight:700}
 .opt-A{ background: var(--optA); }
 .opt-B{ background: var(--optB); }
 .opt-C{ background: var(--optC); }
@@ -265,7 +260,6 @@ body::after{
 .opt-G{ background: var(--optG); }
 .opt-H{ background: var(--optH); }
 
-/* Charts */
 .chart-wrap{
   border:1px solid var(--line);
   border-radius:12px;
@@ -274,73 +268,80 @@ body::after{
   min-height:260px;
   display:flex;
 }
-
 .chart-wrap canvas{width:100% !important;height:100% !important}
 
 .footer{margin:14px 0 30px;display:flex;justify-content:flex-end}
 
-/* ================================
-   Mobile: perfect width alignment
-   - Keep No visible
-   - Fix widths for No/Lang/Q columns
-   - Name column uses remaining space and auto-scales down
-   ================================ */
+/* Mobile tightening */
 @media (max-width: 520px){
   .wrap{padding:12px}
-
-  /* Header: tighter */
   .title{font-size:17px}
   .badge{padding:7px 9px}
   .btn{padding:8px 11px}
 
-  /* Tables: tighter spacing */
   .table th,.table td{
     padding:8px 8px;
     font-size:12px;
   }
 
-  /* Fixed widths so the whole table fits phone width */
+  /* Ensure No column stays minimal on mobile */
   .table-respondents th:nth-child(1),
   .table-respondents td:nth-child(1){
-    width: 34px; /* No */
+    width: 2.2em;
   }
 
-  .table-respondents th:nth-child(3),
-  .table-respondents td:nth-child(3){
-    width: 42px; /* Lang */
-  }
-
-  .table-respondents th:nth-child(4),
-  .table-respondents td:nth-child(4),
-  .table-respondents th:nth-child(5),
-  .table-respondents td:nth-child(5),
-  .table-respondents th:nth-child(6),
-  .table-respondents td:nth-child(6){
-    width: 52px; /* Q2/Q3/Q4 */
-  }
-
-  /* Name column: auto scale down when needed (2-step) */
+  /* Name: base step down on mobile */
   .table-respondents td:nth-child(2){
-    font-size: 12px;       /* step 1 */
+    font-size: 12px;
     line-height: 1.2;
   }
 
-  /* iOS Safari tends to need a bit smaller for long names */
+  /* iOS Safari: a bit smaller */
   @supports (-webkit-touch-callout: none){
     .table-respondents td:nth-child(2){
-      font-size: 11px;     /* step 2 */
+      font-size: 11px;
     }
   }
 
-  /* Option badges slightly smaller on mobile */
-  .opt{
-    min-width:30px;
-    padding:4px 7px;
-    font-size:12px;
-  }
+  /* Option badges smaller */
+  .opt{ min-width:30px; padding:4px 7px; font-size:12px; }
 }
 
-/* Print/PDF */
+/* Dialog */
+.dialog{
+  border:1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(18,24,39,.98);
+  color: var(--text);
+  width: min(520px, 92vw);
+  padding: 0;
+  box-shadow: var(--shadow);
+}
+.dialog::backdrop{
+  background: rgba(0,0,0,.55);
+}
+.dialog-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding: 12px 12px;
+  border-bottom:1px solid var(--line);
+}
+.dialog-title{
+  font-weight:800;
+  font-size:14px;
+}
+.dialog-close{
+  padding:7px 10px;
+}
+.dialog-body{
+  padding: 12px 12px 14px;
+  line-height: 1.5;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+/* Print */
 @media print{
   body::before, body::after { display:none !important; }
   .topbar,.btn{display:none !important}
@@ -348,4 +349,5 @@ body::after{
   html{background:#fff !important}
   .card{box-shadow:none;border:1px solid #ddd}
   .table-wrap{border:1px solid #ddd}
+  dialog{display:none !important;}
 }
