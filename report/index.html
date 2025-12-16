@@ -4,10 +4,16 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>TSC Event Survey - Report</title>
-  <link rel="stylesheet" href="./report.css" />
+
+  <!-- CSS (cache busting) -->
+  <link rel="stylesheet" href="./report.css?v=20251216a" />
+
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
+
+  <!-- ================= Header ================= -->
   <header class="topbar">
     <div class="wrap topbar-inner">
       <div>
@@ -21,14 +27,17 @@
     </div>
   </header>
 
+  <!-- ================= Main Layout ================= -->
   <main class="wrap grid">
-    <!-- Left: Respondents -->
+
+    <!-- ========== Left: Respondents ========== -->
     <aside class="side">
       <details class="card" open>
         <summary class="card-head">
           <h2>Respondents</h2>
           <span class="muted" id="respondentCount">0</span>
         </summary>
+
         <div class="card-body">
           <div class="table-wrap">
             <table class="table table-respondents" id="tblRespondents">
@@ -37,24 +46,29 @@
                   <th style="width:56px;">No</th>
                   <th>Name</th>
                   <th style="width:64px;">Lang</th>
-                  <th style="width:58px;">Q2</th>
-                  <th style="width:58px;">Q3</th>
-                  <th style="width:58px;">Q4</th>
+                  <th style="width:56px;">Q2</th>
+                  <th style="width:56px;">Q3</th>
+                  <th style="width:56px;">Q4</th>
                 </tr>
               </thead>
-              <tbody><!-- injected --></tbody>
+              <tbody>
+                <!-- injected by report.js -->
+              </tbody>
             </table>
           </div>
+
           <div class="hint">
-            Same player name re-submissions can be de-duplicated to the latest entry.
+            Same player name re-submissions are automatically de-duplicated
+            and only the latest entry is counted.
           </div>
         </div>
       </details>
     </aside>
 
-    <!-- Right: Sections -->
+    <!-- ========== Right: Report Sections ========== -->
     <section class="maincol">
-      <!-- Card template: Table + Chart -->
+
+      <!-- ===== Q2 ===== -->
       <section class="card">
         <div class="card-head">
           <h2>Polar Invasion / Wasteland Showdown</h2>
@@ -64,9 +78,19 @@
           <div>
             <div class="table-wrap">
               <table class="table" id="tblQ2First">
-                <thead><tr><th>Time slot</th><th class="num">Total</th></tr></thead>
+                <thead>
+                  <tr>
+                    <th>Time slot</th>
+                    <th class="num">Total</th>
+                  </tr>
+                </thead>
                 <tbody></tbody>
-                <tfoot><tr><th>Total</th><th class="num" id="q2FirstTotal">0</th></tr></tfoot>
+                <tfoot>
+                  <tr>
+                    <th>Total</th>
+                    <th class="num" id="q2FirstTotal">0</th>
+                  </tr>
+                </tfoot>
               </table>
             </div>
           </div>
@@ -76,6 +100,7 @@
         </div>
       </section>
 
+      <!-- ===== Q3 ===== -->
       <section class="card">
         <div class="card-head">
           <h2>Elite War / Doom Arena / Zombie Uprize</h2>
@@ -84,9 +109,19 @@
         <div class="card-body split">
           <div class="table-wrap">
             <table class="table" id="tblQ3Time">
-              <thead><tr><th>Time slot</th><th class="num">Total</th></tr></thead>
+              <thead>
+                <tr>
+                  <th>Time slot</th>
+                  <th class="num">Total</th>
+                </tr>
+              </thead>
               <tbody></tbody>
-              <tfoot><tr><th>Total</th><th class="num" id="q3TimeTotal">0</th></tr></tfoot>
+              <tfoot>
+                <tr>
+                  <th>Total</th>
+                  <th class="num" id="q3TimeTotal">0</th>
+                </tr>
+              </tfoot>
             </table>
           </div>
           <div class="chart-wrap">
@@ -95,6 +130,7 @@
         </div>
       </section>
 
+      <!-- ===== Q4 ===== -->
       <section class="card">
         <div class="card-head">
           <h2>Elite War / Doom Arena / Zombie Uprize</h2>
@@ -103,9 +139,19 @@
         <div class="card-body split">
           <div class="table-wrap">
             <table class="table" id="tblQ4Day">
-              <thead><tr><th>Day</th><th class="num">Total</th></tr></thead>
+              <thead>
+                <tr>
+                  <th>Day</th>
+                  <th class="num">Total</th>
+                </tr>
+              </thead>
               <tbody></tbody>
-              <tfoot><tr><th>Total</th><th class="num" id="q4DayTotal">0</th></tr></tfoot>
+              <tfoot>
+                <tr>
+                  <th>Total</th>
+                  <th class="num" id="q4DayTotal">0</th>
+                </tr>
+              </tfoot>
             </table>
           </div>
           <div class="chart-wrap">
@@ -114,6 +160,7 @@
         </div>
       </section>
 
+      <!-- ===== Language ===== -->
       <section class="card">
         <div class="card-head">
           <h2>Language chosen</h2>
@@ -122,9 +169,19 @@
         <div class="card-body split">
           <div class="table-wrap">
             <table class="table" id="tblLang">
-              <thead><tr><th>Language</th><th class="num">Total</th></tr></thead>
+              <thead>
+                <tr>
+                  <th>Language</th>
+                  <th class="num">Total</th>
+                </tr>
+              </thead>
               <tbody></tbody>
-              <tfoot><tr><th>Total</th><th class="num" id="langTotal">0</th></tr></tfoot>
+              <tfoot>
+                <tr>
+                  <th>Total</th>
+                  <th class="num" id="langTotal">0</th>
+                </tr>
+              </tfoot>
             </table>
           </div>
           <div class="chart-wrap">
@@ -133,12 +190,16 @@
         </div>
       </section>
 
+      <!-- ===== Footer ===== -->
       <footer class="footer">
         <button class="btn ghost" onclick="window.print()">Print / Save PDF</button>
       </footer>
+
     </section>
   </main>
 
-  <script src="./report.js"></script>
+  <!-- JS (cache busting) -->
+  <script src="./report.js?v=20251216a"></script>
+
 </body>
 </html>
