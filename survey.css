@@ -144,9 +144,9 @@ h1 {
   margin-bottom: 4px;
 }
 
-.tsc-image-01,
-.tsc-image-02,
-.tsc-image-03 {
+.ary-image-01,
+.ary-image-02,
+.ary-image-03 {
   margin: 8px 0 10px;
   border-radius: 18px;
   overflow: hidden;
@@ -154,9 +154,9 @@ h1 {
   background: #020617;
 }
 
-.tsc-image-01 img,
-.tsc-image-02 img,
-.tsc-image-03 img {
+.ary-image-01 img,
+.ary-image-02 img,
+.ary-image-03 img {
   display: block;
   width: 100%;
   height: auto;
