@@ -1,13 +1,13 @@
 // ===============================
 // TSC Survey Report - report.js
+// OPTION ①: Short label (A/B/C) + tooltip full label
 // CSV columns:
-// timestamp, language, player_name, Q2_time, Q3_time, Q4_day
+// timestamp,language,player_name,Q2_time,Q3_time,Q4_day
 // ===============================
 
 // CSV location (recommended):
 // - repo root: /data/survey.csv
 // - report page: /report/index.html
-// This relative URL works on GitHub Pages even under /<repo>/.
 const CSV_URL = new URL("../data/survey.csv", location.href).toString();
 
 // If you want to force GitHub Raw URL, you can set it here instead.
@@ -117,20 +117,21 @@ function canonicalizeAnswer(value, labelMap){
   if (!s) return "";
   const letter = extractLeadingLetter(s);
   if (letter && labelMap[letter]) return labelMap[letter];
+
   // If user stores full label already and it matches one of the labels, keep it.
   const normalized = s.replace(/\s+/g, " ").trim();
   const mapValues = Object.values(labelMap);
   const found = mapValues.find(v => v.replace(/\s+/g, " ").trim() === normalized);
   if (found) return found;
-  // Otherwise keep as-is (but this may appear as "Other")
+
+  // Otherwise keep as-is (but may end up in "Other")
   return normalized;
 }
 
 function langDisplay(langCodeRaw){
   const code = safeTrim(langCodeRaw).toLowerCase();
-  const norm = (code === "zh-hans" || code === "zh-hant") ? code : code;
-  const label = LANGUAGE_LABELS[norm] || (code ? code : "—");
-  return { code: norm || "—", label };
+  const label = LANGUAGE_LABELS[code] || (code ? code : "—");
+  return { code: code || "—", label };
 }
 
 // RFC4180-ish CSV parser (handles quotes, commas, newlines)
@@ -174,7 +175,6 @@ function parseCSV(text){
         continue;
       }
       if (c === "\r"){
-        // ignore \r, handle \r\n via \n
         i++;
         continue;
       }
@@ -190,15 +190,13 @@ function parseCSV(text){
       i++;
     }
   }
-  // last field
   row.push(field);
   rows.push(row);
 
-  // Remove trailing empty row (common in CSV)
+  // Remove trailing empty row
   while (rows.length && rows[rows.length-1].every(x => safeTrim(x) === "")) {
     rows.pop();
   }
-
   if (!rows.length) return [];
 
   const headers = rows[0].map(h => safeTrim(h));
@@ -206,7 +204,6 @@ function parseCSV(text){
 
   for (let r = 1; r < rows.length; r++){
     const cols = rows[r];
-    // skip completely empty lines
     if (cols.every(x => safeTrim(x) === "")) continue;
 
     const obj = {};
@@ -223,14 +220,17 @@ function destroyCharts(){
   charts = [];
 }
 
+// ===== OPTION ①: Short labels on axis, full labels in tooltip =====
 function makeBar(canvasId, labels, values){
+  const shortLabels = labels.map(l => {
+    const m = String(l).match(/^([A-Z])\./);
+    return m ? m[1] : l;
+  });
+
   const ctx = document.getElementById(canvasId);
   const c = new Chart(ctx, {
     type: "bar",
-    data: {
-      labels,
-      datasets: [{ label: "Total", data: values }]
-    },
+    data: { labels: shortLabels, datasets: [{ label: "Total", data: values }] },
     options: {
       responsive: true,
       maintainAspectRatio: false,
@@ -238,18 +238,14 @@ function makeBar(canvasId, labels, values){
         legend: { display: false },
         tooltip: {
           callbacks: {
+            title: (items) => labels[items[0].dataIndex],
             label: (item) => ` ${item.formattedValue}`
           }
         }
       },
       scales: {
-        x: {
-          ticks: { maxRotation: 60, minRotation: 0 }
-        },
-        y: {
-          beginAtZero: true,
-          ticks: { precision: 0 }
-        }
+        x: { ticks: { autoSkip: false } },
+        y: { beginAtZero: true, ticks: { precision: 0 } }
       }
     }
   });
@@ -295,9 +291,7 @@ function setUpdatedByLatestTimestamp(latestTs){
 
 // ---------- core: fetch -> parse -> dedupe -> aggregate -> render ----------
 async function loadCSV(){
-  // cache buster (important on GitHub Pages/CDN)
   const url = CSV_URL + (CSV_URL.includes("?") ? "&" : "?") + "t=" + Date.now();
-
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok){
     throw new Error(`CSV fetch failed: ${res.status} ${res.statusText}`);
@@ -305,19 +299,15 @@ async function loadCSV(){
   const text = await res.text();
   const rows = parseCSV(text);
 
-  // Basic validation
   const required = ["timestamp","language","player_name","Q2_time","Q3_time","Q4_day"];
   const missing = required.filter(k => !(k in (rows[0] || {})));
   if (missing.length){
     throw new Error("CSV header missing: " + missing.join(", "));
   }
-
   return rows;
 }
 
 function dedupeLatestByPlayer(rows){
-  // Keep latest by timestamp per player_name (case-sensitive by default)
-  // If you want case-insensitive, change key = name.toLowerCase()
   const map = new Map();
 
   for (const r of rows){
@@ -328,7 +318,7 @@ function dedupeLatestByPlayer(rows){
     const prev = map.get(name);
 
     if (!prev || ts > prev._ts || (ts === prev._ts && prev._seq < r._seq)){
-      const cleaned = {
+      map.set(name, {
         timestamp: safeTrim(r.timestamp),
         language: safeTrim(r.language),
         player_name: name,
@@ -336,20 +326,17 @@ function dedupeLatestByPlayer(rows){
         Q3_time: safeTrim(r.Q3_time),
         Q4_day: safeTrim(r.Q4_day),
         _ts: ts,
-        _seq: r._seq, // stable tie-break
-      };
-      map.set(name, cleaned);
+        _seq: r._seq,
+      });
     }
   }
 
   const arr = Array.from(map.values());
-  // Show respondents in time order (old -> new). You can flip if you want newest first.
   arr.sort((a,b) => (a._ts - b._ts) || (a._seq - b._seq));
   return arr;
 }
 
 function countByLabel(items, labelMap, optionsOrder){
-  // returns array: [[label, count], ...] in stable order
   const counts = new Map();
 
   for (const it of items){
@@ -361,7 +348,6 @@ function countByLabel(items, labelMap, optionsOrder){
   const orderedLabels = optionsOrder.map(k => labelMap[k]).filter(Boolean);
   const out = orderedLabels.map(lbl => [lbl, counts.get(lbl) || 0]);
 
-  // Add "Other" bucket if any unmatched labels exist
   let otherCount = 0;
   for (const [k,v] of counts.entries()){
     if (!orderedLabels.includes(k)) otherCount += v;
@@ -369,7 +355,6 @@ function countByLabel(items, labelMap, optionsOrder){
   if (otherCount > 0){
     out.push(["Other", otherCount]);
   }
-
   return out;
 }
 
@@ -388,7 +373,6 @@ function countLanguages(respondents){
     out.push([`${code} ${label}`, n]);
   }
 
-  // include other languages not in the list
   const others = [];
   for (const [code,n] of counts.entries()){
     if (!LANGUAGE_ORDER.includes(code)){
@@ -405,14 +389,11 @@ function countLanguages(respondents){
 function renderReport(respondents){
   destroyCharts();
 
-  // Meta: latest timestamp among deduped
   const latest = respondents.reduce((m,r) => Math.max(m, r._ts || 0), 0);
   setUpdatedByLatestTimestamp(latest);
 
-  // Left list
   fillRespondents(respondents);
 
-  // Aggregations
   const q2Rows = countByLabel(
     respondents.map(r => r.Q2_time),
     Q2_TIME_LABELS,
@@ -453,24 +434,22 @@ async function refresh(){
     setButtonBusy(true);
 
     const rows = await loadCSV();
-    // add seq index for tie-break
     rows.forEach((r, idx) => { r._seq = idx; });
 
     const respondents = dedupeLatestByPlayer(rows);
-
     renderReport(respondents);
   }catch(err){
     console.error(err);
     destroyCharts();
 
-    // show error in meta badge (user-visible)
     elLastUpdated.textContent = "Error: " + (err?.message || String(err));
-    // clear tables
+
     tblRespondentsBody.innerHTML = "";
     tblQ2FirstBody.innerHTML = "";
     tblQ3TimeBody.innerHTML = "";
     tblQ4DayBody.innerHTML = "";
     tblLangBody.innerHTML = "";
+
     elRespondentCount.textContent = "0";
     elQ2FirstTotal.textContent = "0";
     elQ3TimeTotal.textContent  = "0";
@@ -481,10 +460,8 @@ async function refresh(){
   }
 }
 
-// Wire up
 if (elBtnRefresh){
   elBtnRefresh.addEventListener("click", refresh);
 }
 
-// Initial load
 refresh();
