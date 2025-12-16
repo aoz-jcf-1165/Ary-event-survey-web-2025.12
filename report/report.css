@@ -21,33 +21,31 @@ html{
 
 body{
   margin:0;
-  min-height:100svh; /* mobile safe viewport height */
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans", "Helvetica Neue", Arial, "Apple Color Emoji","Segoe UI Emoji";
-  background: transparent; /* background handled by ::before */
+  min-height:100svh;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans",
+               "Helvetica Neue", Arial, "Apple Color Emoji","Segoe UI Emoji";
+  background: transparent;
   color:var(--text);
   position: relative;
   overflow-x: hidden;
 }
 
-/* Fixed gradient layer that covers the entire viewport (prevents repeat seams) */
+/* Fixed gradient layer */
 body::before{
   content:"";
   position: fixed;
   inset: 0;
   z-index: -1;
   pointer-events: none;
-
-  /* One continuous background */
   background:
     radial-gradient(1200px 600px at 10% 0%, rgba(110,168,254,.18), transparent 55%),
     radial-gradient(800px 500px at 90% 20%, rgba(130,87,229,.16), transparent 55%),
     var(--bg);
-
   background-repeat: no-repeat;
-  background-size: cover; /* ensures full coverage */
+  background-size: cover;
 }
 
-/* Optional very subtle overlay to hide any banding on some displays */
+/* Subtle overlay */
 body::after{
   content:"";
   position: fixed;
@@ -55,7 +53,6 @@ body::after{
   z-index: -1;
   pointer-events: none;
   background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(0,0,0,.06));
-  mix-blend-mode: normal;
 }
 
 .wrap{max-width:1100px;margin:0 auto;padding:16px}
@@ -66,7 +63,6 @@ body::after{
   z-index:10;
   background:rgba(11,14,20,.72);
   backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   border-bottom:1px solid var(--line);
 }
 
@@ -74,18 +70,13 @@ body::after{
   display:flex;
   justify-content:space-between;
   align-items:center;
-  gap:12px
+  gap:12px;
 }
 
-.title{font-weight:800;font-size:18px;letter-spacing:.2px}
+.title{font-weight:800;font-size:18px}
 .sub{color:var(--muted);font-size:12px;margin-top:2px}
 
-.meta{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  flex-wrap:wrap
-}
+.meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 
 .badge{
   font-size:12px;
@@ -93,7 +84,7 @@ body::after{
   padding:8px 10px;
   border:1px solid var(--line);
   border-radius:999px;
-  background:rgba(18,24,39,.55)
+  background:rgba(18,24,39,.55);
 }
 
 .btn{
@@ -131,19 +122,14 @@ body::after{
 .card-head{
   padding:14px 16px;
   display:flex;
-  align-items:baseline;
   justify-content:space-between;
-  gap:10px;
   border-bottom:1px solid var(--line);
 }
 
 .card-head h2{margin:0;font-size:14px}
 .muted{color:var(--muted);font-size:12px}
 .card-body{padding:14px 16px}
-.hint{margin-top:10px;color:var(--muted);font-size:12px;line-height:1.4}
-
-.side details > summary{list-style:none;cursor:pointer}
-.side summary::-webkit-details-marker{display:none}
+.hint{margin-top:10px;color:var(--muted);font-size:12px}
 
 .split{
   display:grid;
@@ -159,32 +145,66 @@ body::after{
   overflow:auto;
   border-radius:12px;
   border:1px solid var(--line);
-  background:rgba(15,20,34,.55)
+  background:rgba(15,20,34,.55);
 }
 
 .table{
   width:100%;
   border-collapse:collapse;
-  min-width:320px
+  min-width:520px;
 }
 
 .table th,.table td{
   padding:10px 12px;
   border-bottom:1px solid rgba(35,44,68,.7);
-  font-size:13px
+  font-size:13px;
 }
 
 .table thead th{
   position:sticky;
   top:0;
   background:rgba(18,24,39,.95);
-  text-align:left
+  text-align:left;
 }
 
 .table td.num,.table th.num{text-align:right}
 .table tbody tr:hover{background:rgba(110,168,254,.06)}
-.table tfoot th,.table tfoot td{font-weight:800;background:rgba(18,24,39,.65)}
-.table tfoot tr{border-top:1px solid var(--line)}
+.table tfoot th,.table tfoot td{
+  font-weight:800;
+  background:rgba(18,24,39,.65);
+}
+
+/* ================================
+   ★ Respondents 表 専用調整
+   ================================ */
+
+/* Name 列を 1 行固定（折り返し禁止 + …表示） */
+#tblRespondents th:nth-child(2),
+#tblRespondents td:nth-child(2){
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 220px;   /* ← 必要なら調整 */
+}
+
+/* Q2/Q3/Q4 は中央寄せ & 強調 */
+#tblRespondents th:nth-child(4),
+#tblRespondents th:nth-child(5),
+#tblRespondents th:nth-child(6),
+#tblRespondents td:nth-child(4),
+#tblRespondents td:nth-child(5),
+#tblRespondents td:nth-child(6){
+  text-align: center;
+  font-weight: 800;
+  letter-spacing: .3px;
+}
+
+/* num 右寄せより Q 列センターを優先 */
+#tblRespondents td:nth-child(4).num,
+#tblRespondents td:nth-child(5).num,
+#tblRespondents td:nth-child(6).num{
+  text-align: center;
+}
 
 .chart-wrap{
   border:1px solid var(--line);
@@ -195,43 +215,16 @@ body::after{
   display:flex;
 }
 
-.chart-wrap canvas{width:100% !important;height:100% !important}
+.chart-wrap canvas{width:100%!important;height:100%!important}
 
 .footer{margin:14px 0 30px;display:flex;justify-content:flex-end}
 
-/* ★ Respondents 表（Q2/Q3/Q4追加）: 列増加に備えて横幅を確保 */
-#tblRespondents{
-  min-width: 520px; /* 6列でも見切れにくく */
-}
-
-/* ★ Respondents 表: Q2/Q3/Q4 は中央寄せ + 少し強調 */
-#tblRespondents th:nth-child(4),
-#tblRespondents th:nth-child(5),
-#tblRespondents th:nth-child(6),
-#tblRespondents td:nth-child(4),
-#tblRespondents td:nth-child(5),
-#tblRespondents td:nth-child(6){
-  text-align: center;  /* Q列はセンターが見やすい */
-  font-weight: 800;   /* 集計っぽく */
-  letter-spacing: .3px;
-}
-
-/* ★ 既存の num 右寄せ指定より Q列センターを優先させる */
-#tblRespondents td:nth-child(4).num,
-#tblRespondents td:nth-child(5).num,
-#tblRespondents td:nth-child(6).num,
-#tblRespondents th:nth-child(4).num,
-#tblRespondents th:nth-child(5).num,
-#tblRespondents th:nth-child(6).num{
-  text-align: center;
-}
-
-/* Print/PDF */
+/* Print / PDF */
 @media print{
   body::before, body::after { display:none !important; }
   .topbar,.btn{display:none !important}
-  body{background:#fff !important;color:#000}
-  html{background:#fff !important}
+  body{background:#fff!important;color:#000}
+  html{background:#fff!important}
   .card{box-shadow:none;border:1px solid #ddd}
   .table-wrap{border:1px solid #ddd}
 }
