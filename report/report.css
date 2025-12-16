@@ -157,7 +157,7 @@ body::after{
 
 .table-wrap{
   overflow:auto;
-  -webkit-overflow-scrolling: touch; /* ★ iOS スクロール安定 */
+  -webkit-overflow-scrolling: touch; /* iOS scroll stability */
   border-radius:12px;
   border:1px solid var(--line);
   background:rgba(15,20,34,.55)
@@ -166,7 +166,7 @@ body::after{
 .table{
   width:100%;
   border-collapse:collapse;
-  min-width:320px; /* ★ 元に戻す（全テーブル共通） */
+  min-width:320px; /* keep generic tables safe */
 }
 
 .table th,.table td{
@@ -180,7 +180,7 @@ body::after{
   top:0;
   background:rgba(18,24,39,.95);
   text-align:left;
-  z-index: 1; /* ★ sticky安定 */
+  z-index:1; /* sticky header stability */
 }
 
 .table td.num,.table th.num{text-align:right}
@@ -202,16 +202,16 @@ body::after{
 .footer{margin:14px 0 30px;display:flex;justify-content:flex-end}
 
 /* ================================
-   ★ Respondents 表（ヘッダー崩れ対策）
+   Respondents table: iOS header/column stability + new columns
    ================================ */
 
-/* 列が増えるので Respondents だけ横幅確保 */
+/* Ensure enough width for 6 columns and stable sizing */
 #tblRespondents{
-  min-width: 560px;      /* ★ 6列分を安定確保 */
-  table-layout: fixed;   /* ★ iOSで列計算を固定して崩れ防止 */
+  min-width:560px;
+  table-layout:fixed; /* prevents iOS header jitter */
 }
 
-/* 列幅を明示（th/td両方に効かせる） */
+/* Explicit widths for fixed columns */
 #tblRespondents th:nth-child(1),
 #tblRespondents td:nth-child(1){ width:56px; }
 
@@ -227,7 +227,7 @@ body::after{
 #tblRespondents th:nth-child(6),
 #tblRespondents td:nth-child(6){ width:56px; }
 
-/* Name 列：1行固定 + … */
+/* Name: single line + ellipsis */
 #tblRespondents th:nth-child(2),
 #tblRespondents td:nth-child(2){
   white-space: nowrap;
@@ -235,7 +235,12 @@ body::after{
   text-overflow: ellipsis;
 }
 
-/* Q2/Q3/Q4 は中央寄せ & 強調 */
+/* Center-align for Lang and Q columns */
+#tblRespondents th:nth-child(3),
+#tblRespondents td:nth-child(3){
+  text-align: center;
+}
+
 #tblRespondents th:nth-child(4),
 #tblRespondents th:nth-child(5),
 #tblRespondents th:nth-child(6),
@@ -247,10 +252,106 @@ body::after{
   letter-spacing: .3px;
 }
 
-/* Lang も中央寄せの方が見やすい場合（好み） */
-#tblRespondents th:nth-child(3),
-#tblRespondents td:nth-child(3){
-  text-align: center;
+/* ================================
+   Name click -> modal (UI)
+   ================================ */
+
+#tblRespondents td.name-cell{
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: rgba(110,168,254,.5);
+}
+#tblRespondents td.name-cell:hover{
+  color: var(--accent);
+}
+
+/* ================================
+   Q2/Q3/Q4 Color coding (A=blue, B=green...)
+   - report.js adds: class="code code-A" etc.
+   ================================ */
+.code{ font-weight: 800; letter-spacing: .3px; }
+
+/* A=Blue */
+.code-A{ color:#6ea8fe; }
+/* B=Green */
+.code-B{ color:#22c55e; }
+/* C=Yellow */
+.code-C{ color:#facc15; }
+/* D=Orange */
+.code-D{ color:#fb923c; }
+/* E=Purple */
+.code-E{ color:#a78bfa; }
+/* F=Pink */
+.code-F{ color:#f472b6; }
+/* G=Cyan */
+.code-G{ color:#38bdf8; }
+/* H=Gray */
+.code-H{ color:#9ca3af; }
+
+/* ================================
+   Modal styles
+   - report.js injects #nameModal into <body>
+   ================================ */
+
+#nameModal{
+  position: fixed;
+  inset: 0;
+  display: none;
+  z-index: 1000;
+}
+
+#nameModal.open{
+  display: block;
+}
+
+#nameModal .modal-backdrop{
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.65);
+}
+
+#nameModal .modal{
+  position: relative;
+  max-width: 420px;
+  margin: 20vh auto 0;
+  background: linear-gradient(180deg, rgba(18,24,39,.98), rgba(15,20,34,.98));
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  padding: 16px;
+}
+
+.modal-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap: 10px;
+  margin-bottom:10px;
+}
+
+.modal-head h3{
+  margin:0;
+  font-size:14px;
+}
+
+.modal-close{
+  background:none;
+  border:none;
+  color:var(--muted);
+  font-size:20px;
+  line-height:1;
+  cursor:pointer;
+  padding: 0 6px;
+}
+
+.modal-close:hover{
+  color: var(--text);
+}
+
+.modal-body{
+  font-size:16px;
+  word-break: break-all;
+  padding-top:6px;
 }
 
 /* Print/PDF */
