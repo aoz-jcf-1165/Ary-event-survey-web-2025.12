@@ -8,6 +8,16 @@
   --accent:#6ea8fe;
   --radius:16px;
   --shadow: 0 10px 30px rgba(0,0,0,.35);
+
+  /* Option badge colors (A-H) */
+  --optA: rgba(110,168,254,.22);
+  --optB: rgba(130,87,229,.22);
+  --optC: rgba(50,205,180,.20);
+  --optD: rgba(255,196,61,.20);
+  --optE: rgba(255,107,107,.18);
+  --optF: rgba(150,220,100,.18);
+  --optG: rgba(255,140,0,.18);
+  --optH: rgba(180,180,255,.18);
 }
 
 *{box-sizing:border-box}
@@ -185,6 +195,39 @@ body::after{
 .table tbody tr:hover{background:rgba(110,168,254,.06)}
 .table tfoot th,.table tfoot td{font-weight:800;background:rgba(18,24,39,.65)}
 .table tfoot tr{border-top:1px solid var(--line)}
+
+/* Respondents table: keep columns tighter */
+.table-respondents{ min-width: 420px; }
+.table-respondents td, .table-respondents th{ white-space: nowrap; }
+.table-respondents td:nth-child(2){ white-space: normal; } /* Name can wrap */
+
+/* Option badge (A-H) */
+.opt{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:34px;
+  padding:4px 8px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.10);
+  font-weight:800;
+  letter-spacing:.3px;
+  font-size:12px;
+  line-height:1;
+  user-select:none;
+}
+.opt.is-empty{
+  opacity:.6;
+  font-weight:700;
+}
+.opt-A{ background: var(--optA); }
+.opt-B{ background: var(--optB); }
+.opt-C{ background: var(--optC); }
+.opt-D{ background: var(--optD); }
+.opt-E{ background: var(--optE); }
+.opt-F{ background: var(--optF); }
+.opt-G{ background: var(--optG); }
+.opt-H{ background: var(--optH); }
 
 .chart-wrap{
   border:1px solid var(--line);
