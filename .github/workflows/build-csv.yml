@@ -40,10 +40,22 @@ jobs:
               'Q4_day',
             ];
 
+            const ALLOWED_LANGS = new Set([
+              "en","de","nl","fr","ru","es","pt","it","zh-hans","ja","ko","zh-hant","ar","th","vi","tr","pl","ms","id"
+            ]);
+
             function escapeCSV(value) {
               if (value == null) return '';
               const s = String(value);
               if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+              return s;
+            }
+
+            function normalizeLang(v) {
+              const s = (v == null ? '' : String(v)).trim().toLowerCase();
+              if (!s) return 'en';
+              if (s === 'zh') return 'zh-hans';
+              if (!ALLOWED_LANGS.has(s)) return 'en';
               return s;
             }
 
@@ -62,7 +74,7 @@ jobs:
 
               const rowObject = {
                 timestamp: map['timestamp'] || '',
-                language: map['language'] || '',
+                language: normalizeLang(map['language']),
                 player_name: map['player_name'] || '',
                 Q2_time: map['Q2_time'] || map['Q02_time'] || map['Q02 (time)'] || '',
                 Q3_time: map['Q3_time'] || map['Q03_time'] || map['Q03 (time)'] || '',
@@ -77,7 +89,7 @@ jobs:
 
             const issues = await github.paginate(
               github.rest.issues.listForRepo,
-              { owner, repo, state: 'open', per_page: 100 } // ★ open のみ
+              { owner, repo, state: 'open', per_page: 100 }
             );
 
             const latestByPlayer = new Map();
