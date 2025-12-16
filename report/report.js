@@ -86,7 +86,7 @@ function parseTimestamp(ts){
   return Number.isFinite(t) ? t : 0;
 }
 
-// ★ ドット前(または先頭の英字)を抽出して A/B/C... に統一
+// --- A/B/C... 抽出（ドット前対応）---
 function extractLeadingLetter(value){
   const s = safeTrim(value);
   if (!s) return "";
@@ -118,6 +118,44 @@ function langDisplay(langCodeRaw){
   return { code: code || "—", label };
 }
 
+/* ===============================
+   Modal (Name) - injected
+   =============================== */
+function ensureNameModal(){
+  if (document.getElementById("nameModal")) return;
+
+  const modal = document.createElement("div");
+  modal.id = "nameModal";
+  modal.innerHTML = `
+    <div class="modal-backdrop"></div>
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Player Name">
+      <div class="modal-head">
+        <h3>Player Name</h3>
+        <button class="modal-close" aria-label="Close">×</button>
+      </div>
+      <div class="modal-body" id="modalNameText"></div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  const close = () => modal.classList.remove("open");
+  modal.querySelector(".modal-backdrop").addEventListener("click", close);
+  modal.querySelector(".modal-close").addEventListener("click", close);
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") close();
+  });
+}
+
+function openNameModal(name){
+  ensureNameModal();
+  document.getElementById("modalNameText").textContent = name;
+  document.getElementById("nameModal").classList.add("open");
+}
+
+/* ===============================
+   CSV Parser
+   =============================== */
 function parseCSV(text){
   const rows = [];
   let row = [];
@@ -178,7 +216,7 @@ function destroyCharts(){
   charts = [];
 }
 
-// ===== OPTION ③: Horizontal bar =====
+// Horizontal bar chart
 function makeBar(canvasId, labels, values){
   const ctx = document.getElementById(canvasId);
   const c = new Chart(ctx, {
@@ -211,13 +249,15 @@ function fillRespondents(respondents){
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td class="num">${idx + 1}</td>
-      <td>${escapeHtml(r.player_name)}</td>
+      <td class="name-cell" title="${escapeHtml(r.player_name)}">${escapeHtml(r.player_name)}</td>
       <td class="num" title="${escapeHtml(label)}">${escapeHtml(code)}</td>
 
-      <td class="num" title="${escapeHtml(safeTrim(r.Q2_time) || "-")}">${escapeHtml(q2Code)}</td>
-      <td class="num" title="${escapeHtml(safeTrim(r.Q3_time) || "-")}">${escapeHtml(q3Code)}</td>
-      <td class="num" title="${escapeHtml(safeTrim(r.Q4_day) || "-")}">${escapeHtml(q4Code)}</td>
+      <td class="num code code-${escapeHtml(q2Code)}" title="${escapeHtml(safeTrim(r.Q2_time) || "-")}">${escapeHtml(q2Code)}</td>
+      <td class="num code code-${escapeHtml(q3Code)}" title="${escapeHtml(safeTrim(r.Q3_time) || "-")}">${escapeHtml(q3Code)}</td>
+      <td class="num code code-${escapeHtml(q4Code)}" title="${escapeHtml(safeTrim(r.Q4_day) || "-")}">${escapeHtml(q4Code)}</td>
     `;
+
+    tr.querySelector(".name-cell").addEventListener("click", () => openNameModal(r.player_name));
     tblRespondentsBody.appendChild(tr);
   });
   elRespondentCount.textContent = String(respondents.length);
