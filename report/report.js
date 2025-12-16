@@ -1,6 +1,6 @@
 // ===============================
 // TSC Survey Report - report.js
-// OPTION ③: Horizontal bars (indexAxis:'y')
+// Horizontal bars (indexAxis:'y')
 // CSV columns:
 // timestamp,language,player_name,Q2_time,Q3_time,Q4_day
 // ===============================
@@ -85,12 +85,16 @@ function parseTimestamp(ts){
   const t = Date.parse(ts);
   return Number.isFinite(t) ? t : 0;
 }
+
+// Extract leading A/B/C... from "A. xxx" or "A xxx"
 function extractLeadingLetter(value){
   const s = safeTrim(value);
   if (!s) return "";
   const m = s.match(/^([A-Za-z])(?:[\.\s]|$)/);
   return m ? m[1].toUpperCase() : "";
 }
+
+// Normalize answers: accept both "A. ..." and full label text
 function canonicalizeAnswer(value, labelMap){
   const s = safeTrim(value);
   if (!s) return "";
@@ -104,6 +108,7 @@ function canonicalizeAnswer(value, labelMap){
 
   return normalized;
 }
+
 function langDisplay(langCodeRaw){
   const code = safeTrim(langCodeRaw).toLowerCase();
   const label = LANGUAGE_LABELS[code] || (code ? code : "—");
@@ -170,7 +175,7 @@ function destroyCharts(){
   charts = [];
 }
 
-// ===== OPTION ③: Horizontal bar =====
+// Horizontal bar chart
 function makeBar(canvasId, labels, values){
   const ctx = document.getElementById(canvasId);
   const c = new Chart(ctx, {
@@ -191,15 +196,32 @@ function makeBar(canvasId, labels, values){
   return c;
 }
 
+// Create colored option badge HTML for A-H
+function optionBadge(letter){
+  const L = safeTrim(letter).toUpperCase();
+  if (!L) return `<span class="opt is-empty">—</span>`;
+  const cls = /^[A-H]$/.test(L) ? `opt opt-${L}` : `opt`;
+  return `<span class="${cls}" title="${escapeHtml(L)}">${escapeHtml(L)}</span>`;
+}
+
 function fillRespondents(respondents){
   tblRespondentsBody.innerHTML = "";
   respondents.forEach((r, idx) => {
     const { code, label } = langDisplay(r.language);
+
+    // Q2/Q3/Q4: show only leading letter (A-H...) and color-code it
+    const q2L = extractLeadingLetter(r.Q2_time);
+    const q3L = extractLeadingLetter(r.Q3_time);
+    const q4L = extractLeadingLetter(r.Q4_day);
+
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td class="num">${idx + 1}</td>
       <td>${escapeHtml(r.player_name)}</td>
       <td title="${escapeHtml(label)}">${escapeHtml(code)}</td>
+      <td>${optionBadge(q2L)}</td>
+      <td>${optionBadge(q3L)}</td>
+      <td>${optionBadge(q4L)}</td>
     `;
     tblRespondentsBody.appendChild(tr);
   });
@@ -239,6 +261,7 @@ async function loadCSV(){
   return rows;
 }
 
+// Deduplicate by latest timestamp per player_name
 function dedupeLatestByPlayer(rows){
   const map = new Map();
   for (const r of rows){
