@@ -1,12 +1,21 @@
 // ===============================
 // TSC Survey Report - report.js
-// Respondents table: add Q2/Q3/Q4 badges (A-H)
-// CSV columns:
-// timestamp,language,player_name,Q2_time,Q3_time,Q4_day
+// - Respondents table: Q2/Q3/Q4 badges (A-H)
+// - Tap truncated Name => dialog shows full name
+// - Click headers (Lang/Q2/Q3/Q4) => sort (toggle asc/desc)
 // ===============================
 
 const CSV_URL = new URL("../data/survey.csv", location.href).toString();
 let charts = [];
+
+// ---------- Dialog elements ----------
+const dlg = document.getElementById("nameDialog");
+const dlgNameText = document.getElementById("dlgNameText");
+const dlgCloseBtn = document.getElementById("dlgCloseBtn");
+
+// ---------- Sort state ----------
+let currentRespondents = [];
+let sortState = { key: null, dir: "asc" }; // dir: "asc" | "desc"
 
 const Q2_TIME_LABELS = {
   A: "A. Server Time 04:00 - 05:00",
@@ -64,7 +73,9 @@ const elLastUpdated = document.getElementById("lastUpdated");
 const elRespondentCount = document.getElementById("respondentCount");
 const elBtnRefresh = document.getElementById("btnRefresh");
 
+const tblRespondents = document.getElementById("tblRespondents");
 const tblRespondentsBody = document.querySelector("#tblRespondents tbody");
+
 const tblQ2FirstBody = document.querySelector("#tblQ2First tbody");
 const tblQ3TimeBody  = document.querySelector("#tblQ3Time tbody");
 const tblQ4DayBody   = document.querySelector("#tblQ4Day tbody");
@@ -84,11 +95,8 @@ function escapeHtml(s){
 /** remove BOM/zero-width/nbsp and trim */
 function normalizeText(x){
   let s = String(x ?? "");
-  // BOM
   s = s.replace(/^\uFEFF/, "");
-  // zero-width characters
   s = s.replace(/[\u200B-\u200D\u2060]/g, "");
-  // NBSP -> space
   s = s.replace(/\u00A0/g, " ");
   return s.trim();
 }
@@ -101,7 +109,6 @@ function parseTimestamp(ts){
 /** Convert fullwidth A-Z to ASCII A-Z */
 function toAsciiLetter(ch){
   const code = ch.charCodeAt(0);
-  // Ａ..Ｚ (FF21..FF3A) / ａ..ｚ (FF41..FF5A)
   if (code >= 0xFF21 && code <= 0xFF3A) return String.fromCharCode(code - 0xFF21 + 0x41);
   if (code >= 0xFF41 && code <= 0xFF5A) return String.fromCharCode(code - 0xFF41 + 0x61);
   return ch;
@@ -115,12 +122,9 @@ function extractLeadingLetter(value){
   const first = toAsciiLetter(raw[0]);
   const rest = raw.slice(1);
 
-  // accept ".", "．"(fullwidth), space
   if (/^[A-Za-z]$/.test(first) && (/^[\.\s]/.test(rest) || rest.startsWith("．") || rest === "")){
     return first.toUpperCase();
   }
-
-  // fallback regex (after basic normalization)
   const m = raw.match(/^([A-Za-z])(?:[\.\s]|$)/);
   return m ? m[1].toUpperCase() : "";
 }
@@ -226,35 +230,11 @@ function makeBar(canvasId, labels, values){
   return c;
 }
 
-// Create colored option badge HTML for A-H
 function optionBadge(letter){
   const L = normalizeText(letter).toUpperCase();
   if (!L) return `<span class="opt is-empty">—</span>`;
   const cls = /^[A-H]$/.test(L) ? `opt opt-${L}` : `opt`;
   return `<span class="${cls}" title="${escapeHtml(L)}">${escapeHtml(L)}</span>`;
-}
-
-function fillRespondents(respondents){
-  tblRespondentsBody.innerHTML = "";
-  respondents.forEach((r, idx) => {
-    const { code, label } = langDisplay(r.language);
-
-    const q2L = extractLeadingLetter(r.Q2_time);
-    const q3L = extractLeadingLetter(r.Q3_time);
-    const q4L = extractLeadingLetter(r.Q4_day);
-
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td class="num">${idx + 1}</td>
-      <td>${escapeHtml(r.player_name)}</td>
-      <td title="${escapeHtml(label)}">${escapeHtml(code)}</td>
-      <td>${optionBadge(q2L)}</td>
-      <td>${optionBadge(q3L)}</td>
-      <td>${optionBadge(q4L)}</td>
-    `;
-    tblRespondentsBody.appendChild(tr);
-  });
-  elRespondentCount.textContent = String(respondents.length);
 }
 
 function fillTableGeneric(tbodyEl, rows, totalEl){
@@ -290,6 +270,7 @@ async function loadCSV(){
   return rows;
 }
 
+// Deduplicate by latest timestamp per player_name
 function dedupeLatestByPlayer(rows){
   const map = new Map();
   for (const r of rows){
@@ -358,13 +339,114 @@ function countLanguages(respondents){
   return out;
 }
 
+// ---------- Sorting ----------
+function getSortValue(r, key){
+  if (key === "no") return r.__no ?? 0;
+  if (key === "name") return (r.player_name || "").toLowerCase();
+  if (key === "lang") return (normalizeText(r.language).toLowerCase()) || "—";
+  if (key === "q2") return extractLeadingLetter(r.Q2_time) || "—";
+  if (key === "q3") return extractLeadingLetter(r.Q3_time) || "—";
+  if (key === "q4") return extractLeadingLetter(r.Q4_day) || "—";
+  return "";
+}
+
+function sortRespondents(arr){
+  const { key, dir } = sortState;
+  if (!key) return arr;
+
+  const mul = (dir === "asc") ? 1 : -1;
+  const copy = [...arr];
+  copy.sort((a,b) => {
+    const va = getSortValue(a, key);
+    const vb = getSortValue(b, key);
+
+    if (typeof va === "number" && typeof vb === "number") return (va - vb) * mul;
+
+    const sa = String(va ?? "");
+    const sb = String(vb ?? "");
+    const c = sa.localeCompare(sb, undefined, { numeric: true, sensitivity: "base" });
+    if (c !== 0) return c * mul;
+
+    // tie-breaker: keep stable by timestamp
+    return (a._ts - b._ts) * mul;
+  });
+  return copy;
+}
+
+function updateSortIndicators(){
+  const ths = tblRespondents.querySelectorAll("thead th.th-sort");
+  ths.forEach(th => {
+    th.classList.remove("is-asc","is-desc");
+    const k = th.getAttribute("data-sort");
+    if (k && k === sortState.key){
+      th.classList.add(sortState.dir === "asc" ? "is-asc" : "is-desc");
+    }
+  });
+}
+
+// ---------- Name dialog ----------
+function openNameDialog(fullName){
+  if (!dlg) return;
+  dlgNameText.textContent = fullName;
+  if (typeof dlg.showModal === "function") dlg.showModal();
+  else alert(fullName); // fallback
+}
+
+function isTruncated(el){
+  // If element content is overflowed
+  return el && (el.scrollWidth > el.clientWidth + 1);
+}
+
+// ---------- Render respondents ----------
+function renderRespondentsTable(respondents){
+  tblRespondentsBody.innerHTML = "";
+  const sorted = sortRespondents(respondents);
+
+  sorted.forEach((r, idx) => {
+    const { code, label } = langDisplay(r.language);
+
+    const q2L = extractLeadingLetter(r.Q2_time);
+    const q3L = extractLeadingLetter(r.Q3_time);
+    const q4L = extractLeadingLetter(r.Q4_day);
+
+    const tr = document.createElement("tr");
+
+    // keep original full name for dialog
+    const fullName = r.player_name;
+
+    tr.innerHTML = `
+      <td class="num">${idx + 1}</td>
+      <td class="cell-name" title="${escapeHtml(fullName)}">${escapeHtml(fullName)}</td>
+      <td title="${escapeHtml(label)}">${escapeHtml(code)}</td>
+      <td data-letter="${escapeHtml(q2L)}">${optionBadge(q2L)}</td>
+      <td data-letter="${escapeHtml(q3L)}">${optionBadge(q3L)}</td>
+      <td data-letter="${escapeHtml(q4L)}">${optionBadge(q4L)}</td>
+    `;
+
+    // Name tap -> only when actually truncated (or always if you prefer)
+    const nameCell = tr.querySelector(".cell-name");
+    nameCell.addEventListener("click", () => {
+      // Open when truncated (ellipsis) OR long
+      if (isTruncated(nameCell) || fullName.length >= 16){
+        openNameDialog(fullName);
+      }
+    });
+
+    tblRespondentsBody.appendChild(tr);
+  });
+
+  elRespondentCount.textContent = String(sorted.length);
+  updateSortIndicators();
+}
+
+// ---------- Render whole report ----------
 function renderReport(respondents){
   destroyCharts();
 
   const latest = respondents.reduce((m,r) => Math.max(m, r._ts || 0), 0);
   setUpdatedByLatestTimestamp(latest);
 
-  fillRespondents(respondents);
+  renderRespondentsTable(respondents);
 
   const q2Rows = countByLabel(respondents.map(r=>r.Q2_time), Q2_TIME_LABELS, ["A","B","C","D"]);
   fillTableGeneric(tblQ2FirstBody, q2Rows, elQ2FirstTotal);
@@ -395,7 +477,12 @@ async function refresh(){
     const rows = await loadCSV();
     rows.forEach((r, idx) => { r._seq = idx; });
     const respondents = dedupeLatestByPlayer(rows);
-    renderReport(respondents);
+
+    // store original order number for sorting (if needed)
+    respondents.forEach((r, i) => { r.__no = i + 1; });
+
+    currentRespondents = respondents;
+    renderReport(currentRespondents);
   }catch(err){
     console.error(err);
     destroyCharts();
@@ -417,5 +504,40 @@ async function refresh(){
   }
 }
 
+// ---------- Wire up sorting ----------
+function setupHeaderSorting(){
+  const ths = tblRespondents.querySelectorAll("thead th.th-sort");
+  ths.forEach(th => {
+    th.addEventListener("click", () => {
+      const key = th.getAttribute("data-sort");
+      if (!key) return;
+
+      // If same key -> toggle direction, else set asc
+      if (sortState.key === key){
+        sortState.dir = (sortState.dir === "asc") ? "desc" : "asc";
+      }else{
+        sortState.key = key;
+        sortState.dir = "asc";
+      }
+      renderRespondentsTable(currentRespondents);
+    });
+  });
+}
+
+// ---------- Dialog close ----------
+function setupDialog(){
+  if (!dlg) return;
+  if (dlgCloseBtn) dlgCloseBtn.addEventListener("click", () => dlg.close());
+  dlg.addEventListener("click", (e) => {
+    // click outside content closes
+    const rect = dlg.getBoundingClientRect();
+    const inDialog = (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom);
+    if (!inDialog) dlg.close();
+  });
+}
+
+// ---------- Init ----------
 if (elBtnRefresh) elBtnRefresh.addEventListener("click", refresh);
+setupHeaderSorting();
+setupDialog();
 refresh();
