@@ -218,7 +218,7 @@ body::after{
 */
 .table-respondents th:nth-child(1),
 .table-respondents td:nth-child(1){
-  width: 3.2ch;                 /* "No" + room for 2-digit/3-digit */
+  width: 3.6ch;                 /* "No" + room for 2-digit/3-digit */
   text-align: right;
   font-variant-numeric: tabular-nums;
   padding-left:8px;
