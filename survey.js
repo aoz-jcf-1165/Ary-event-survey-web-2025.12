@@ -1,16 +1,16 @@
 // ==== Cloudflare Worker API エンドポイント ====
-const API_URL = "https://tsc-survey-api.aozjakz01.workers.dev/";
+const API_URL = "https://ary-survey-api.aozjakz01.workers.dev/";
 
 // ==== 多言語翻訳設定 ====
 const TRANSLATION_FILE = "translations.tsv";
 
 // ===== CDN PDF link =====
 const CDN_PDF_URL =
-  "https://cdn.jsdelivr.net/gh/aoz-jcf-1165/TSC-event-survey-web-2025.12@main/share_document/TSC-event-survey-2025-12.pdf";
+  "https://cdn.jsdelivr.net/gh/aoz-jcf-1165/ary-event-survey-web-2025.12@main/share_document/ary-event-survey-2025-12.pdf";
 
 const LANGUAGE_LABELS = {
   "en": "English",
-  "de": "Deutsch",
+  "de": "Deuaryh",
   "nl": "Nederlands",
   "fr": "Français",
   "ru": "Русский",
@@ -34,7 +34,7 @@ let translations = {};
 let availableLangs = [];
 
 // ★ 言語は localStorage を優先（無ければ en）
-let currentLang = (localStorage.getItem("tsc_lang") || "en").trim() || "en";
+let currentLang = (localStorage.getItem("ary_lang") || "en").trim() || "en";
 
 // ★ 翻訳ロード完了フラグ（未完了なら送信禁止）
 let isAppReady = false;
@@ -68,7 +68,7 @@ function t(key) {
 function applyLanguage(lang) {
   // ★ 正規化（小文字 + trim）
   currentLang = (lang || "en").toString().trim() || "en";
-  localStorage.setItem("tsc_lang", currentLang);
+  localStorage.setItem("ary_lang", currentLang);
 
   document.documentElement.lang = currentLang;
   document.documentElement.dir = (currentLang === "ar") ? "rtl" : "ltr";
