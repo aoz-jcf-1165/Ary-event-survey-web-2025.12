@@ -6,7 +6,7 @@
   <title>TSC Event Survey - Report</title>
 
   <!-- CSS (cache busting) -->
-  <link rel="stylesheet" href="./report.css?v=20251216e" />
+  <link rel="stylesheet" href="./report.css?v=20251216f" />
 
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -36,16 +36,64 @@
         </summary>
 
         <div class="card-body">
+          <div class="filters-bar" id="activeFilters" aria-live="polite">
+            <!-- injected pills -->
+          </div>
+
           <div class="table-wrap">
             <table class="table table-respondents" id="tblRespondents">
               <thead>
-                <tr>
-                  <th class="th-sort" data-sort="no" title="Sort by No">No <span class="sort-ind" aria-hidden="true"></span></th>
-                  <th class="th-sort" data-sort="name" title="Sort by Name">Name <span class="sort-ind" aria-hidden="true"></span></th>
-                  <th class="th-sort" data-sort="lang" title="Tap to sort">Lang <span class="sort-ind" aria-hidden="true"></span></th>
-                  <th class="th-sort" data-sort="q2" title="Tap to sort">Q2 <span class="sort-ind" aria-hidden="true"></span></th>
-                  <th class="th-sort" data-sort="q3" title="Tap to sort">Q3 <span class="sort-ind" aria-hidden="true"></span></th>
-                  <th class="th-sort" data-sort="q4" title="Tap to sort">Q4 <span class="sort-ind" aria-hidden="true"></span></th>
+                <!-- header labels -->
+                <tr class="tr-head">
+                  <th class="th-fixed">No</th>
+                  <th>Name</th>
+
+                  <th class="th-filter" title="Filter by language">
+                    Lang <span class="th-icon" aria-hidden="true">▼</span>
+                  </th>
+                  <th class="th-filter" title="Filter by Q2">
+                    Q2 <span class="th-icon" aria-hidden="true">▼</span>
+                  </th>
+                  <th class="th-filter" title="Filter by Q3">
+                    Q3 <span class="th-icon" aria-hidden="true">▼</span>
+                  </th>
+                  <th class="th-filter" title="Filter by Q4">
+                    Q4 <span class="th-icon" aria-hidden="true">▼</span>
+                  </th>
+                </tr>
+
+                <!-- filter controls row -->
+                <tr class="tr-filters">
+                  <th>
+                    <button class="btn tiny ghost" id="btnResetFilters" type="button" title="Clear filters">Reset</button>
+                  </th>
+                  <th>
+                    <input class="input tiny" id="filterName" type="search" placeholder="Search name…" autocomplete="off" />
+                  </th>
+                  <th>
+                    <select class="select tiny" id="filterLang">
+                      <option value="">All</option>
+                    </select>
+                  </th>
+                  <th>
+                    <select class="select tiny" id="filterQ2">
+                      <option value="">All</option>
+                      <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option>
+                    </select>
+                  </th>
+                  <th>
+                    <select class="select tiny" id="filterQ3">
+                      <option value="">All</option>
+                      <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option><option value="E">E</option>
+                    </select>
+                  </th>
+                  <th>
+                    <select class="select tiny" id="filterQ4">
+                      <option value="">All</option>
+                      <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option>
+                      <option value="E">E</option><option value="F">F</option><option value="G">G</option><option value="H">H</option>
+                    </select>
+                  </th>
                 </tr>
               </thead>
               <tbody><!-- injected --></tbody>
@@ -53,7 +101,7 @@
           </div>
 
           <div class="hint">
-            Tap headers (Lang/Q2/Q3/Q4) to sort. Tap a truncated player name to view full text.
+            Use filters (Lang / Q2 / Q3 / Q4) to narrow results. Tap a truncated player name to view full text.
           </div>
         </div>
       </details>
@@ -155,6 +203,6 @@
   </dialog>
 
   <!-- JS (cache busting) -->
-  <script src="./report.js?v=20251216d"></script>
+  <script src="./report.js?v=20251216f"></script>
 </body>
 </html>
