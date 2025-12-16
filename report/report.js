@@ -1,6 +1,6 @@
 // ===============================
 // TSC Survey Report - report.js
-// Respondents: header split + scroll sync (iOS Safari fix)
+// OPTION ③: Horizontal bars (indexAxis:'y')
 // CSV columns:
 // timestamp,language,player_name,Q2_time,Q3_time,Q4_day
 // ===============================
@@ -35,11 +35,30 @@ const Q4_DAY_LABELS = {
 };
 
 const LANGUAGE_LABELS = {
-  "en": "English","de":"Deutsch","nl":"Nederlands","fr":"Français","ru":"Русский","es":"Español","pt":"Português","it":"Italiano",
-  "zh-hans":"简体中文","ja":"日本語","ko":"한국어","zh-hant":"繁體中文","ar":"العربية","th":"ไทย","vi":"Tiếng Việt","tr":"Türkçe","pl":"Polski","ms":"Bahasa Melayu","id":"Bahasa Indonesia",
+  "en": "English",
+  "de": "Deutsch",
+  "nl": "Nederlands",
+  "fr": "Français",
+  "ru": "Русский",
+  "es": "Español",
+  "pt": "Português",
+  "it": "Italiano",
+  "zh-hans": "简体中文",
+  "ja": "日本語",
+  "ko": "한국어",
+  "zh-hant": "繁體中文",
+  "ar": "العربية",
+  "th": "ไทย",
+  "vi": "Tiếng Việt",
+  "tr": "Türkçe",
+  "pl": "Polski",
+  "ms": "Bahasa Melayu",
+  "id": "Bahasa Indonesia",
 };
 
-const LANGUAGE_ORDER = ["en","de","nl","fr","ru","es","pt","it","zh-hans","ja","ko","zh-hant","ar","th","vi","tr","pl","ms","id"];
+const LANGUAGE_ORDER = [
+  "en","de","nl","fr","ru","es","pt","it","zh-hans","ja","ko","zh-hant","ar","th","vi","tr","pl","ms","id"
+];
 
 const elLastUpdated = document.getElementById("lastUpdated");
 const elRespondentCount = document.getElementById("respondentCount");
@@ -56,9 +75,6 @@ const elQ3TimeTotal  = document.getElementById("q3TimeTotal");
 const elQ4DayTotal   = document.getElementById("q4DayTotal");
 const elLangTotal    = document.getElementById("langTotal");
 
-const respBodyWrap = document.getElementById("respBodyWrap");
-const respHeadWrap = document.getElementById("respHeadWrap");
-
 function escapeHtml(s){
   return String(s ?? "").replace(/[&<>"']/g, m => ({
     "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
@@ -70,7 +86,7 @@ function parseTimestamp(ts){
   return Number.isFinite(t) ? t : 0;
 }
 
-// A/B/C...（ドット前対応）
+// ★ ドット前(または先頭の英字)を抽出して A/B/C... に統一
 function extractLeadingLetter(value){
   const s = safeTrim(value);
   if (!s) return "";
@@ -102,61 +118,6 @@ function langDisplay(langCodeRaw){
   return { code: code || "—", label };
 }
 
-/* ===============================
-   Modal (Name)
-   =============================== */
-function ensureNameModal(){
-  if (document.getElementById("nameModal")) return;
-
-  const modal = document.createElement("div");
-  modal.id = "nameModal";
-  modal.innerHTML = `
-    <div class="modal-backdrop"></div>
-    <div class="modal" role="dialog" aria-modal="true" aria-label="Player Name">
-      <div class="modal-head">
-        <h3>Player Name</h3>
-        <button class="modal-close" aria-label="Close">×</button>
-      </div>
-      <div class="modal-body" id="modalNameText"></div>
-    </div>
-  `;
-  document.body.appendChild(modal);
-
-  const close = () => modal.classList.remove("open");
-  modal.querySelector(".modal-backdrop").addEventListener("click", close);
-  modal.querySelector(".modal-close").addEventListener("click", close);
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
-}
-
-function openNameModal(name){
-  ensureNameModal();
-  document.getElementById("modalNameText").textContent = name;
-  document.getElementById("nameModal").classList.add("open");
-}
-
-/* ===============================
-   Respondents header sync (決定打)
-   =============================== */
-let syncing = false;
-function syncRespondentsHeader(){
-  if (!respBodyWrap || !respHeadWrap) return;
-  if (syncing) return;
-  syncing = true;
-
-  // 横スクロール同期
-  respBodyWrap.addEventListener("scroll", () => {
-    respHeadWrap.scrollLeft = respBodyWrap.scrollLeft;
-  }, { passive:true });
-
-  // 初期位置合わせ
-  respHeadWrap.scrollLeft = respBodyWrap.scrollLeft;
-
-  syncing = false;
-}
-
-/* ===============================
-   CSV Parser
-   =============================== */
 function parseCSV(text){
   const rows = [];
   let row = [];
@@ -166,13 +127,24 @@ function parseCSV(text){
 
   while (i < text.length){
     const c = text[i];
+
     if (inQuotes){
       if (c === '"'){
         const next = text[i+1];
-        if (next === '"'){ field += '"'; i += 2; continue; }
-        inQuotes = false; i++; continue;
+        if (next === '"'){
+          field += '"';
+          i += 2;
+          continue;
+        } else {
+          inQuotes = false;
+          i++;
+          continue;
+        }
+      } else {
+        field += c;
+        i++;
+        continue;
       }
-      field += c; i++; continue;
     } else {
       if (c === '"'){ inQuotes = true; i++; continue; }
       if (c === ","){ row.push(field); field=""; i++; continue; }
@@ -181,7 +153,8 @@ function parseCSV(text){
       field += c; i++;
     }
   }
-  row.push(field); rows.push(row);
+  row.push(field);
+  rows.push(row);
 
   while (rows.length && rows[rows.length-1].every(x => safeTrim(x) === "")) rows.pop();
   if (!rows.length) return [];
@@ -205,6 +178,7 @@ function destroyCharts(){
   charts = [];
 }
 
+// ===== OPTION ③: Horizontal bar =====
 function makeBar(canvasId, labels, values){
   const ctx = document.getElementById(canvasId);
   const c = new Chart(ctx, {
@@ -237,20 +211,16 @@ function fillRespondents(respondents){
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td class="num">${idx + 1}</td>
-      <td class="name-cell" title="${escapeHtml(r.player_name)}">${escapeHtml(r.player_name)}</td>
+      <td>${escapeHtml(r.player_name)}</td>
       <td class="num" title="${escapeHtml(label)}">${escapeHtml(code)}</td>
-      <td class="num code code-${escapeHtml(q2Code)}" title="${escapeHtml(safeTrim(r.Q2_time) || "-")}">${escapeHtml(q2Code)}</td>
-      <td class="num code code-${escapeHtml(q3Code)}" title="${escapeHtml(safeTrim(r.Q3_time) || "-")}">${escapeHtml(q3Code)}</td>
-      <td class="num code code-${escapeHtml(q4Code)}" title="${escapeHtml(safeTrim(r.Q4_day) || "-")}">${escapeHtml(q4Code)}</td>
+
+      <td class="num" title="${escapeHtml(safeTrim(r.Q2_time) || "-")}">${escapeHtml(q2Code)}</td>
+      <td class="num" title="${escapeHtml(safeTrim(r.Q3_time) || "-")}">${escapeHtml(q3Code)}</td>
+      <td class="num" title="${escapeHtml(safeTrim(r.Q4_day) || "-")}">${escapeHtml(q4Code)}</td>
     `;
-    tr.querySelector(".name-cell").addEventListener("click", () => openNameModal(r.player_name));
     tblRespondentsBody.appendChild(tr);
   });
-
   elRespondentCount.textContent = String(respondents.length);
-
-  // ★ ここで同期を確実にセット
-  syncRespondentsHeader();
 }
 
 function fillTableGeneric(tbodyEl, rows, totalEl){
@@ -300,7 +270,7 @@ function dedupeLatestByPlayer(rows){
         player_name: name,
         Q2_time: safeTrim(r.Q2_time),
         Q3_time: safeTrim(r.Q3_time),
-        Q4_day:  safeTrim(r.Q4_day),
+        Q4_day: safeTrim(r.Q4_day),
         _ts: ts,
         _seq: r._seq,
       });
