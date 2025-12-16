@@ -199,6 +199,33 @@ body::after{
 
 .footer{margin:14px 0 30px;display:flex;justify-content:flex-end}
 
+/* ★ Respondents 表（Q2/Q3/Q4追加）: 列増加に備えて横幅を確保 */
+#tblRespondents{
+  min-width: 520px; /* 6列でも見切れにくく */
+}
+
+/* ★ Respondents 表: Q2/Q3/Q4 は中央寄せ + 少し強調 */
+#tblRespondents th:nth-child(4),
+#tblRespondents th:nth-child(5),
+#tblRespondents th:nth-child(6),
+#tblRespondents td:nth-child(4),
+#tblRespondents td:nth-child(5),
+#tblRespondents td:nth-child(6){
+  text-align: center;  /* Q列はセンターが見やすい */
+  font-weight: 800;   /* 集計っぽく */
+  letter-spacing: .3px;
+}
+
+/* ★ 既存の num 右寄せ指定より Q列センターを優先させる */
+#tblRespondents td:nth-child(4).num,
+#tblRespondents td:nth-child(5).num,
+#tblRespondents td:nth-child(6).num,
+#tblRespondents th:nth-child(4).num,
+#tblRespondents th:nth-child(5).num,
+#tblRespondents th:nth-child(6).num{
+  text-align: center;
+}
+
 /* Print/PDF */
 @media print{
   body::before, body::after { display:none !important; }
