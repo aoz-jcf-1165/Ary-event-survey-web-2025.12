@@ -4,14 +4,13 @@
   --bg-alt: #0d0506;
   --card: #140809;
 
-  /* Accent: deep rose / warm brown */
-  --accent: #f43f5e; /* rose-500 */
+  --accent: #f43f5e;
   --accent-soft: rgba(244, 63, 94, 0.18);
 
   --text-main: #f3f4f6;
   --text-muted: #b6b1b1;
 
-  --danger: #fb7185; /* rose-400 */
+  --danger: #fb7185;
   --radius-lg: 18px;
   --shadow-soft: 0 18px 40px rgba(0,0,0,0.55);
 }
@@ -24,11 +23,7 @@
 body {
   margin: 0;
   min-height: 100vh;
-
-  /* ★ 最奥背景を黒寄りに（Aryの赤茶トーンに合わせる） */
   background: #050203;
-  background-color: #050203;
-
   color: var(--text-main);
   display: flex;
   justify-content: center;
@@ -68,23 +63,27 @@ body {
 
 header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
   margin-bottom: 10px;
+
+  /* ✅ header内だけ：狭い画面でも崩れにくく */
+  flex-wrap: wrap;
 }
 
 .brand {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  align-items: flex-start;
+  gap: 10px;
 }
 
+/* ✅ ロゴ（横長長方形） */
 .brand-logo {
-  height: 38px;              /* 高さ基準 */
-  min-width: 60px;           /* 横長 */
+  height: 25px;
+  min-width: 60px;
   padding: 4px 8px;
-  border-radius: 8px;        /* 角丸長方形 */
+  border-radius: 8px;
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -92,7 +91,6 @@ header {
   background: rgba(255,255,255,0.95);
 }
 
-/* 画像の縦横比を尊重 */
 .brand-logo img {
   max-height: 100%;
   max-width: 100%;
@@ -113,34 +111,88 @@ header {
   color: var(--text-muted);
 }
 
+/* =========================================================
+   ✅ Header layout tweak (NO HTML change)
+   - Place brand-text-sub under logo
+   - Keep brand-text-main beside logo (right side)
+   - Works even if brand-text-main/sub are wrapped in a div
+   - Header only: no effect on other areas
+   ========================================================= */
+header .brand{
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas:
+    "logo main"
+    "sub  main";
+  column-gap: 10px;
+  row-gap: 2px;
+  align-items: start;
+}
+
+/* allow inner wrapper div without changing HTML */
+header .brand > :not(.brand-logo){
+  display: contents;
+}
+
+header .brand-logo{
+  grid-area: logo;
+}
+
+header .brand-text-main{
+  grid-area: main;
+  align-self: center;
+}
+
+header .brand-text-sub{
+  grid-area: sub;
+  font-size: 10px;
+  line-height: 1.15;
+  white-space: nowrap;  /* 1行固定（崩れ防止） */
+}
+
+/* =========================
+   Lang selector（スリム化）
+   - Header only to avoid impacting other UI
+   ========================= */
 .lang-select-wrap {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 4px;
+
+  padding: 2px 6px 2px 8px;
+  max-width: 40%;
+
   background: rgba(24, 10, 10, 0.8);
   border-radius: 999px;
-  padding: 3px 8px 3px 10px;
   border: 1px solid rgba(244, 63, 94, 0.32);
-  max-width: 48%;
-  justify-content: space-between;
 }
 
 .lang-select-wrap span {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text-muted);
   white-space: nowrap;
 }
 
-select {
+.lang-select-wrap select {
   background: transparent;
   border: none;
   color: var(--text-main);
-  font-size: 12px;
-  padding: 3px 4px;
+  font-size: 11px;
+  padding: 1px 2px;
   outline: none;
   cursor: pointer;
-  max-width: 50%;
+  max-width: 110px;
 }
+
+/* ✅ “約25%縮小” をヘッダー内だけに適用 */
+header .lang-select-wrap{
+  max-width: 30%;
+}
+header .lang-select-wrap select{
+  max-width: 82px;
+}
+
+/* ========================= */
 
 main {
   margin-top: 8px;
@@ -148,26 +200,7 @@ main {
 
 h1 {
   font-size: 18px;
-  margin: 0;
-  margin-bottom: 4px;
-}
-
-.ary-image-01,
-.ary-image-02,
-.ary-image-03 {
-  margin: 8px 0 10px;
-  border-radius: 18px;
-  overflow: hidden;
-  border: 1px solid rgba(244, 63, 94, 0.18);
-  background: #050203;
-}
-
-.ary-image-01 img,
-.ary-image-02 img,
-.ary-image-03 img {
-  display: block;
-  width: 100%;
-  height: auto;
+  margin: 0 0 4px;
 }
 
 .subtitle {
@@ -190,223 +223,4 @@ h1 {
 }
 
 .notice--mb10 {
-  margin-bottom: 10px;
-}
-
-.notice-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
-  background: var(--accent);
-  box-shadow: 0 0 8px rgba(244, 63, 94, 0.85);
-}
-
-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.section-label {
-  font-size: 12px;
-  letter-spacing: 1.4px;
-  color: var(--text-muted);
-  margin-bottom: 2px;
-}
-
-.question {
-  background: radial-gradient(circle at top left, rgba(24, 10, 10, 0.82), #050203);
-  border-radius: var(--radius-lg);
-  padding: 12px 12px 10px;
-  border: 1px solid rgba(244, 63, 94, 0.22);
-}
-
-.question-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 6px;
-}
-
-.question-title {
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.badge {
-  font-size: 10px;
-  padding: 2px 7px;
-  border-radius: 999px;
-  background: rgba(24, 10, 10, 0.92);
-  border: 1px solid rgba(244, 63, 94, 0.28);
-  color: var(--text-muted);
-  white-space: nowrap;
-}
-
-.helper {
-  font-size: 11px;
-  color: var(--text-muted);
-  margin-bottom: 8px;
-  line-height: 1.45;
-}
-
-.helper--mt8 {
-  margin-top: 8px;
-}
-
-.field {
-  position: relative;
-  margin-top: 4px;
-}
-
-input[type="text"] {
-  width: 100%;
-  padding: 8px 11px;
-  border-radius: 999px;
-  border: 1px solid rgba(244, 63, 94, 0.30);
-  background: rgba(24, 10, 10, 0.90);
-  color: var(--text-main);
-  font-size: 13px;
-}
-
-input[type="text"]::placeholder {
-  color: #9a8f8f;
-}
-
-.options {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-top: 2px;
-}
-
-.option-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
-  border-radius: 999px;
-  background: rgba(24, 10, 10, 0.78);
-  border: 1px solid transparent;
-  font-size: 12px;
-  color: var(--text-main);
-}
-
-.option-label input {
-  accent-color: var(--accent);
-}
-
-.option-label:hover {
-  border-color: rgba(244, 63, 94, 0.70);
-  background: rgba(24, 10, 10, 0.92);
-}
-
-.option-code {
-  font-size: 11px;
-  color: var(--accent);
-  min-width: 20px;
-}
-
-.submit-row {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 4px;
-}
-
-button[type="submit"] {
-  border: none;
-  border-radius: 999px;
-  padding: 9px 14px;
-  font-size: 13px;
-  font-weight: 600;
-  background: radial-gradient(circle at top left, #f43f5e, #7c2d12);
-  color: #16090a;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  box-shadow: 0 12px 30px rgba(244, 63, 94, 0.35);
-}
-
-button[type="submit"]:active {
-  transform: translateY(1px);
-  box-shadow: 0 6px 14px rgba(244, 63, 94, 0.28);
-}
-
-button[disabled] {
-  opacity: 0.55;
-  cursor: not-allowed;
-  box-shadow: none;
-  transform: none;
-}
-
-.error {
-  color: var(--danger);
-  font-size: 11px;
-  margin-top: 2px;
-}
-
-.form-error {
-  text-align: center;
-}
-
-.success-box {
-  margin-top: 14px;
-  padding: 10px 11px;
-  border-radius: 14px;
-  border: 1px solid rgba(34, 197, 94, 0.5);
-  background: radial-gradient(circle at top left, rgba(22, 163, 74, 0.35), #022c22);
-  font-size: 11px;
-  color: #bbf7d0;
-}
-
-footer {
-  margin-top: 10px;
-  text-align: center;
-  font-size: 10px;
-  color: var(--text-muted);
-}
-
-.link-card {
-  margin: 10px 0 16px;
-  padding: 12px;
-  border-radius: var(--radius-lg);
-  border: 1px solid rgba(244, 63, 94, 0.22);
-  background: radial-gradient(circle at top left, rgba(24, 10, 10, 0.82), #050203);
-}
-
-.link-row {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 8px;
-}
-
-.link-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(244, 63, 94, 0.20);
-  background: rgba(5, 2, 3, 0.65);
-  color: var(--text-main);
-  text-decoration: none;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.link-btn:hover {
-  border-color: rgba(244, 63, 94, 0.70);
-  background: rgba(5, 2, 3, 0.82);
-}
-
-@media (min-width: 640px) {
-  .card {
-    padding: 20px 22px 24px;
-  }
-}
+  margin-bott
