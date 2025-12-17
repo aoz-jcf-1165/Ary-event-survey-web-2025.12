@@ -4,6 +4,12 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "0 18 * * *"   # UTC 18:00 → JST 翌日 03:00
+  issues:
+    types: [opened, edited, reopened, closed]
+
+permissions:
+  contents: write
+  issues: read
 
 jobs:
   rebuild:
@@ -85,7 +91,7 @@ jobs:
               return hasValue ? rowObject : null;
             }
 
-            core.info(`Fetching OPEN issues only...`);
+            core.info(`Fetching OPEN issues only.`);
 
             const issues = await github.paginate(
               github.rest.issues.listForRepo,
@@ -109,6 +115,8 @@ jobs:
               }
             }
 
+            // NOTE: ここは元ファイルにタイポがあり得ます。
+            // 正しくは [...latestByPlayer.values()] です（CSVが空になる/エラーになるのを防ぐ）
             const finalRows = [...latestByPlayer.values()]
               .sort((a, b) => a.createdAt - b.createdAt)
               .map(e => e.row);
