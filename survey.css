@@ -139,7 +139,8 @@ select {
   padding: 2px 2px;
   outline: none;
   cursor: pointer;
-  max-width: 50%;
+  max-width: max-content; 
+  with: 120px;
 }
 
 main {
