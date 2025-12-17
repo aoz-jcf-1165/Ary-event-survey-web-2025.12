@@ -3,7 +3,7 @@
 ### TSC Event Survey – December 2025
 
 - 📘 Survey Overview (PDF)  
-  https://aoz-jcf-1165.github.io/TSC-event-survey-web-2025.12/share_document/TSC-event-survey-2025-12.pdf
+  https://aoz-jcf-1165.github.io/Ary-event-survey-web-2025.12/share_document/Ary-event-survey-2025-12.pdf
 
 This document explains:
 - Purpose of the survey
