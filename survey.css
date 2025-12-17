@@ -4,6 +4,7 @@
   --bg-alt: #0d0506;
   --card: #140809;
 
+  /* Accent: deep rose / warm brown */
   --accent: #f43f5e;
   --accent-soft: rgba(244, 63, 94, 0.18);
 
@@ -67,22 +68,23 @@ header {
   justify-content: space-between;
   gap: 8px;
   margin-bottom: 10px;
-
-  /* ✅ 狭い画面で崩れにくく */
-  flex-wrap: wrap;
 }
 
+/* =========================
+   Brand / Logo（← ここが修正点）
+   ========================= */
 .brand {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
+/* ⬇ 円形 → 横長長方形 */
 .brand-logo {
-  height: 25px;
-  min-width: 60px;
+  height: 32px;              /* 高さ基準 */
+  min-width: 60px;           /* 横長 */
   padding: 4px 8px;
-  border-radius: 8px;
+  border-radius: 8px;        /* 角丸長方形 */
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -90,6 +92,7 @@ header {
   background: rgba(255,255,255,0.95);
 }
 
+/* 画像の縦横比を尊重 */
 .brand-logo img {
   max-height: 100%;
   max-width: 100%;
@@ -110,50 +113,58 @@ header {
   color: var(--text-muted);
 }
 
-/* =========================
-   Lang selector（幅を適正化）
-   ========================= */
 .lang-select-wrap {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 4px;
-
-  /* ✅ 右側が広がりすぎて他要素を押し潰さない */
-  padding: 2px 6px 2px 8px;
-  max-width: 40%;
-
   background: rgba(24, 10, 10, 0.8);
   border-radius: 999px;
+  padding: 3px 8px 3px 10px;
   border: 1px solid rgba(244, 63, 94, 0.32);
+  max-width: 48%;
+  justify-content: space-between;
 }
 
 .lang-select-wrap span {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-muted);
   white-space: nowrap;
 }
 
-.lang-select-wrap select {
+select {
   background: transparent;
   border: none;
   color: var(--text-main);
-  font-size: 11px;
-  padding: 1px 2px;
+  font-size: 12px;
+  padding: 3px 4px;
   outline: none;
   cursor: pointer;
-
-  /* ✅ 固定しすぎない（長い言語名に耐える） */
-  max-width: 110px;
+  max-width: 70%;
 }
-/* ========================= */
 
-main {
-  margin-top: 8px;
-}
+main { margin-top: 8px; }
 
 h1 {
   font-size: 18px;
   margin: 0 0 4px;
+}
+
+.ary-image-01,
+.ary-image-02,
+.ary-image-03 {
+  margin: 8px 0 10px;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(244, 63, 94, 0.18);
+  background: #050203;
+}
+
+.ary-image-01 img,
+.ary-image-02 img,
+.ary-image-03 img {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
 .subtitle {
@@ -183,11 +194,9 @@ h1 {
   box-shadow: 0 0 8px rgba(244, 63, 94, 0.85);
 }
 
-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
+/* ===== 以下、元CSSそのまま保持 ===== */
+
+form { display: flex; flex-direction: column; gap: 16px; }
 
 .section-label {
   font-size: 12px;
@@ -202,6 +211,8 @@ form {
   border: 1px solid rgba(244, 63, 94, 0.22);
 }
 
+.question-title { font-size: 13px; font-weight: 600; }
+
 input[type="text"] {
   width: 100%;
   padding: 8px 11px;
@@ -211,11 +222,7 @@ input[type="text"] {
   color: var(--text-main);
 }
 
-.options {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
+.options { display: flex; flex-direction: column; gap: 4px; }
 
 .option-label {
   display: flex;
@@ -238,45 +245,6 @@ button[type="submit"] {
   box-shadow: 0 12px 30px rgba(244, 63, 94, 0.35);
 }
 
-/* =========================
-   PDF / Links area（復活）
-   ========================= */
-.link-card {
-  margin: 10px 0 16px;
-  padding: 12px;
-  border-radius: var(--radius-lg);
-  border: 1px solid rgba(244, 63, 94, 0.22);
-  background: radial-gradient(circle at top left, rgba(24, 10, 10, 0.82), #050203);
-}
-
-.link-row {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 8px;
-}
-
-.link-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(244, 63, 94, 0.20);
-  background: rgba(5, 2, 3, 0.65);
-  color: var(--text-main);
-  text-decoration: none;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.link-btn:hover {
-  border-color: rgba(244, 63, 94, 0.70);
-  background: rgba(5, 2, 3, 0.82);
-}
-/* ========================= */
-
 footer {
   margin-top: 10px;
   text-align: center;
@@ -285,7 +253,5 @@ footer {
 }
 
 @media (min-width: 640px) {
-  .card {
-    padding: 20px 22px 24px;
-  }
+  .card { padding: 20px 22px 24px; }
 }
