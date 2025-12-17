@@ -135,7 +135,7 @@ select {
   padding: 3px 4px;
   outline: none;
   cursor: pointer;
-  max-width: 70%;
+  max-width: 50%;
 }
 
 main {
