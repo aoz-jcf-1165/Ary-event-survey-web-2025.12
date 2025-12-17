@@ -117,7 +117,7 @@ header {
 
   /* ↓ 幅を縮小 */
   padding: 2px 6px 2px 8px;
-  max-width: 40%;
+  max-width: 80%;
 
   background: rgba(24, 10, 10, 0.8);
   border-radius: 999px;
