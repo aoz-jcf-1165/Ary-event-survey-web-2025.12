@@ -121,7 +121,7 @@ header {
   border-radius: 999px;
   padding: 3px 4px 3px 8px;
   border: 1px solid rgba(244, 63, 94, 0.32);
-  max-width: max-content; 
+  max-width: 75%; 
   /*justify-content: space-between;*/
 }
 
