@@ -1,14 +1,19 @@
 :root {
-  --bg: #050816;
-  --bg-alt: #0b1020;
-  --card: #111827;
-  --accent: #38bdf8;
-  --accent-soft: rgba(56, 189, 248, 0.2);
-  --text-main: #e5e7eb;
-  --text-muted: #9ca3af;
-  --danger: #f97373;
+  /* === Ary: Dark Red / Dark Brown / Black === */
+  --bg: #050203;
+  --bg-alt: #0d0506;
+  --card: #140809;
+
+  /* Accent: deep rose / warm brown */
+  --accent: #f43f5e; /* rose-500 */
+  --accent-soft: rgba(244, 63, 94, 0.18);
+
+  --text-main: #f3f4f6;
+  --text-muted: #b6b1b1;
+
+  --danger: #fb7185; /* rose-400 */
   --radius-lg: 18px;
-  --shadow-soft: 0 18px 40px rgba(0,0,0,0.45);
+  --shadow-soft: 0 18px 40px rgba(0,0,0,0.55);
 }
 
 * {
@@ -20,9 +25,9 @@ body {
   margin: 0;
   min-height: 100vh;
 
-  /* ★ 最奥背景を黒に（集計ページと同じ思想） */
-  background: #020617;
-  background-color: #020617;
+  /* ★ 最奥背景を黒寄りに（Aryの赤茶トーンに合わせる） */
+  background: #050203;
+  background-color: #050203;
 
   color: var(--text-main);
   display: flex;
@@ -36,10 +41,10 @@ body {
 }
 
 .card {
-  background: linear-gradient(135deg, #020617, #020617 35%, #0b1120);
+  background: linear-gradient(135deg, #050203, #050203 35%, #16090a);
   border-radius: 24px;
   box-shadow: var(--shadow-soft);
-  border: 1px solid rgba(148, 163, 184, 0.15);
+  border: 1px solid rgba(244, 63, 94, 0.16);
   padding: 18px 18px 22px;
   position: relative;
   overflow: hidden;
@@ -51,8 +56,8 @@ body {
   inset: -120px;
   opacity: 0.18;
   background:
-    radial-gradient(circle at 0 0, rgba(56, 189, 248, 0.4), transparent 55%),
-    radial-gradient(circle at 100% 0, rgba(129, 140, 248, 0.4), transparent 55%);
+    radial-gradient(circle at 0 0, rgba(244, 63, 94, 0.38), transparent 55%),
+    radial-gradient(circle at 100% 0, rgba(180, 83, 9, 0.34), transparent 55%);
   pointer-events: none;
 }
 
@@ -109,10 +114,10 @@ header {
   display: flex;
   align-items: center;
   gap: 4px;
-  background: rgba(15, 23, 42, 0.8);
+  background: rgba(24, 10, 10, 0.8);
   border-radius: 999px;
   padding: 3px 8px 3px 10px;
-  border: 1px solid rgba(148, 163, 184, 0.4);
+  border: 1px solid rgba(244, 63, 94, 0.32);
   max-width: 48%;
   justify-content: space-between;
 }
@@ -150,8 +155,8 @@ h1 {
   margin: 8px 0 10px;
   border-radius: 18px;
   overflow: hidden;
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  background: #020617;
+  border: 1px solid rgba(244, 63, 94, 0.18);
+  background: #050203;
 }
 
 .ary-image-01 img,
@@ -190,7 +195,7 @@ h1 {
   height: 7px;
   border-radius: 999px;
   background: var(--accent);
-  box-shadow: 0 0 8px rgba(56, 189, 248, 0.9);
+  box-shadow: 0 0 8px rgba(244, 63, 94, 0.85);
 }
 
 form {
@@ -207,10 +212,10 @@ form {
 }
 
 .question {
-  background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.8), #020617);
+  background: radial-gradient(circle at top left, rgba(24, 10, 10, 0.82), #050203);
   border-radius: var(--radius-lg);
   padding: 12px 12px 10px;
-  border: 1px solid rgba(148, 163, 184, 0.3);
+  border: 1px solid rgba(244, 63, 94, 0.22);
 }
 
 .question-header {
@@ -230,8 +235,8 @@ form {
   font-size: 10px;
   padding: 2px 7px;
   border-radius: 999px;
-  background: rgba(15, 23, 42, 0.9);
-  border: 1px solid rgba(148, 163, 184, 0.5);
+  background: rgba(24, 10, 10, 0.92);
+  border: 1px solid rgba(244, 63, 94, 0.28);
   color: var(--text-muted);
   white-space: nowrap;
 }
@@ -256,14 +261,14 @@ input[type="text"] {
   width: 100%;
   padding: 8px 11px;
   border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.5);
-  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(244, 63, 94, 0.30);
+  background: rgba(24, 10, 10, 0.90);
   color: var(--text-main);
   font-size: 13px;
 }
 
 input[type="text"]::placeholder {
-  color: #6b7280;
+  color: #9a8f8f;
 }
 
 .options {
@@ -279,7 +284,7 @@ input[type="text"]::placeholder {
   gap: 8px;
   padding: 6px 8px;
   border-radius: 999px;
-  background: rgba(15, 23, 42, 0.8);
+  background: rgba(24, 10, 10, 0.78);
   border: 1px solid transparent;
   font-size: 12px;
   color: var(--text-main);
@@ -290,8 +295,8 @@ input[type="text"]::placeholder {
 }
 
 .option-label:hover {
-  border-color: rgba(56, 189, 248, 0.7);
-  background: rgba(15, 23, 42, 0.95);
+  border-color: rgba(244, 63, 94, 0.70);
+  background: rgba(24, 10, 10, 0.92);
 }
 
 .option-code {
@@ -313,19 +318,19 @@ button[type="submit"] {
   padding: 9px 14px;
   font-size: 13px;
   font-weight: 600;
-  background: radial-gradient(circle at top left, #38bdf8, #4f46e5);
-  color: #0b1120;
+  background: radial-gradient(circle at top left, #f43f5e, #7c2d12);
+  color: #16090a;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  box-shadow: 0 12px 30px rgba(37, 99, 235, 0.7);
+  box-shadow: 0 12px 30px rgba(244, 63, 94, 0.35);
 }
 
 button[type="submit"]:active {
   transform: translateY(1px);
-  box-shadow: 0 6px 14px rgba(37, 99, 235, 0.6);
+  box-shadow: 0 6px 14px rgba(244, 63, 94, 0.28);
 }
 
 button[disabled] {
@@ -366,8 +371,8 @@ footer {
   margin: 10px 0 16px;
   padding: 12px;
   border-radius: var(--radius-lg);
-  border: 1px solid rgba(148, 163, 184, 0.3);
-  background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.8), #020617);
+  border: 1px solid rgba(244, 63, 94, 0.22);
+  background: radial-gradient(circle at top left, rgba(24, 10, 10, 0.82), #050203);
 }
 
 .link-row {
@@ -384,8 +389,8 @@ footer {
   gap: 8px;
   padding: 8px 12px;
   border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.35);
-  background: rgba(2, 6, 23, 0.65);
+  border: 1px solid rgba(244, 63, 94, 0.20);
+  background: rgba(5, 2, 3, 0.65);
   color: var(--text-main);
   text-decoration: none;
   font-size: 12px;
@@ -393,8 +398,8 @@ footer {
 }
 
 .link-btn:hover {
-  border-color: rgba(56, 189, 248, 0.7);
-  background: rgba(2, 6, 23, 0.8);
+  border-color: rgba(244, 63, 94, 0.70);
+  background: rgba(5, 2, 3, 0.82);
 }
 
 @media (min-width: 640px) {
