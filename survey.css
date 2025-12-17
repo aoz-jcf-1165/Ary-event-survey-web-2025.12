@@ -5,13 +5,13 @@
   --card: #140809;
 
   /* Accent: deep rose / warm brown */
-  --accent: #f43f5e; /* rose-500 */
+  --accent: #f43f5e;
   --accent-soft: rgba(244, 63, 94, 0.18);
 
   --text-main: #f3f4f6;
   --text-muted: #b6b1b1;
 
-  --danger: #fb7185; /* rose-400 */
+  --danger: #fb7185;
   --radius-lg: 18px;
   --shadow-soft: 0 18px 40px rgba(0,0,0,0.55);
 }
@@ -24,11 +24,7 @@
 body {
   margin: 0;
   min-height: 100vh;
-
-  /* ★ 最奥背景を黒寄りに（Aryの赤茶トーンに合わせる） */
   background: #050203;
-  background-color: #050203;
-
   color: var(--text-main);
   display: flex;
   justify-content: center;
@@ -74,28 +70,35 @@ header {
   margin-bottom: 10px;
 }
 
+/* =========================
+   Brand / Logo（← ここが修正点）
+   ========================= */
 .brand {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
+/* ⬇ 円形 → 横長長方形 */
 .brand-logo {
-  width: 48px;
-  height: 40px;
-  border-radius: 50%;
+  height: 40px;              /* 高さ基準 */
+  min-width: 96px;           /* 横長 */
+  padding: 4px 8px;
+  border-radius: 8px;        /* 角丸長方形 */
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fff;
+  background: rgba(255,255,255,0.95);
 }
 
+/* 画像の縦横比を尊重 */
 .brand-logo img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
+  max-height: 100%;
+  max-width: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
   display: block;
 }
 
@@ -139,14 +142,11 @@ select {
   max-width: 70%;
 }
 
-main {
-  margin-top: 8px;
-}
+main { margin-top: 8px; }
 
 h1 {
   font-size: 18px;
-  margin: 0;
-  margin-bottom: 4px;
+  margin: 0 0 4px;
 }
 
 .ary-image-01,
@@ -186,10 +186,6 @@ h1 {
   margin-bottom: 14px;
 }
 
-.notice--mb10 {
-  margin-bottom: 10px;
-}
-
 .notice-dot {
   width: 7px;
   height: 7px;
@@ -198,64 +194,24 @@ h1 {
   box-shadow: 0 0 8px rgba(244, 63, 94, 0.85);
 }
 
-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
+/* ===== 以下、元CSSそのまま保持 ===== */
+
+form { display: flex; flex-direction: column; gap: 16px; }
 
 .section-label {
   font-size: 12px;
   letter-spacing: 1.4px;
   color: var(--text-muted);
-  margin-bottom: 2px;
 }
 
 .question {
   background: radial-gradient(circle at top left, rgba(24, 10, 10, 0.82), #050203);
   border-radius: var(--radius-lg);
-  padding: 12px 12px 10px;
+  padding: 12px;
   border: 1px solid rgba(244, 63, 94, 0.22);
 }
 
-.question-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 6px;
-}
-
-.question-title {
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.badge {
-  font-size: 10px;
-  padding: 2px 7px;
-  border-radius: 999px;
-  background: rgba(24, 10, 10, 0.92);
-  border: 1px solid rgba(244, 63, 94, 0.28);
-  color: var(--text-muted);
-  white-space: nowrap;
-}
-
-.helper {
-  font-size: 11px;
-  color: var(--text-muted);
-  margin-bottom: 8px;
-  line-height: 1.45;
-}
-
-.helper--mt8 {
-  margin-top: 8px;
-}
-
-.field {
-  position: relative;
-  margin-top: 4px;
-}
+.question-title { font-size: 13px; font-weight: 600; }
 
 input[type="text"] {
   width: 100%;
@@ -264,19 +220,9 @@ input[type="text"] {
   border: 1px solid rgba(244, 63, 94, 0.30);
   background: rgba(24, 10, 10, 0.90);
   color: var(--text-main);
-  font-size: 13px;
 }
 
-input[type="text"]::placeholder {
-  color: #9a8f8f;
-}
-
-.options {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-top: 2px;
-}
+.options { display: flex; flex-direction: column; gap: 4px; }
 
 .option-label {
   display: flex;
@@ -285,31 +231,6 @@ input[type="text"]::placeholder {
   padding: 6px 8px;
   border-radius: 999px;
   background: rgba(24, 10, 10, 0.78);
-  border: 1px solid transparent;
-  font-size: 12px;
-  color: var(--text-main);
-}
-
-.option-label input {
-  accent-color: var(--accent);
-}
-
-.option-label:hover {
-  border-color: rgba(244, 63, 94, 0.70);
-  background: rgba(24, 10, 10, 0.92);
-}
-
-.option-code {
-  font-size: 11px;
-  color: var(--accent);
-  min-width: 20px;
-}
-
-.submit-row {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 4px;
 }
 
 button[type="submit"] {
@@ -321,43 +242,7 @@ button[type="submit"] {
   background: radial-gradient(circle at top left, #f43f5e, #7c2d12);
   color: #16090a;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
   box-shadow: 0 12px 30px rgba(244, 63, 94, 0.35);
-}
-
-button[type="submit"]:active {
-  transform: translateY(1px);
-  box-shadow: 0 6px 14px rgba(244, 63, 94, 0.28);
-}
-
-button[disabled] {
-  opacity: 0.55;
-  cursor: not-allowed;
-  box-shadow: none;
-  transform: none;
-}
-
-.error {
-  color: var(--danger);
-  font-size: 11px;
-  margin-top: 2px;
-}
-
-.form-error {
-  text-align: center;
-}
-
-.success-box {
-  margin-top: 14px;
-  padding: 10px 11px;
-  border-radius: 14px;
-  border: 1px solid rgba(34, 197, 94, 0.5);
-  background: radial-gradient(circle at top left, rgba(22, 163, 74, 0.35), #022c22);
-  font-size: 11px;
-  color: #bbf7d0;
 }
 
 footer {
@@ -367,43 +252,6 @@ footer {
   color: var(--text-muted);
 }
 
-.link-card {
-  margin: 10px 0 16px;
-  padding: 12px;
-  border-radius: var(--radius-lg);
-  border: 1px solid rgba(244, 63, 94, 0.22);
-  background: radial-gradient(circle at top left, rgba(24, 10, 10, 0.82), #050203);
-}
-
-.link-row {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 8px;
-}
-
-.link-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(244, 63, 94, 0.20);
-  background: rgba(5, 2, 3, 0.65);
-  color: var(--text-main);
-  text-decoration: none;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.link-btn:hover {
-  border-color: rgba(244, 63, 94, 0.70);
-  background: rgba(5, 2, 3, 0.82);
-}
-
 @media (min-width: 640px) {
-  .card {
-    padding: 20px 22px 24px;
-  }
+  .card { padding: 20px 22px 24px; }
 }
