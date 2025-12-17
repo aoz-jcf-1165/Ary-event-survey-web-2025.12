@@ -4,7 +4,6 @@
   --bg-alt: #0d0506;
   --card: #140809;
 
-  /* Accent: deep rose / warm brown */
   --accent: #f43f5e;
   --accent-soft: rgba(244, 63, 94, 0.18);
 
@@ -70,21 +69,17 @@ header {
   margin-bottom: 10px;
 }
 
-/* =========================
-   Brand / Logo（← ここが修正点）
-   ========================= */
 .brand {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-/* ⬇ 円形 → 横長長方形 */
 .brand-logo {
-  height: 40px;              /* 高さ基準 */
-  min-width: 96px;           /* 横長 */
+  height: 25px;
+  min-width: 60px;
   padding: 4px 8px;
-  border-radius: 8px;        /* 角丸長方形 */
+  border-radius: 8px;
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -92,7 +87,6 @@ header {
   background: rgba(255,255,255,0.95);
 }
 
-/* 画像の縦横比を尊重 */
 .brand-logo img {
   max-height: 100%;
   max-width: 100%;
@@ -113,58 +107,51 @@ header {
   color: var(--text-muted);
 }
 
+/* =========================
+   Lang selector（幅をスリム化）
+   ========================= */
 .lang-select-wrap {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 4px;
+
+  /* ↓ 幅を縮小 */
+  padding: 2px 6px 2px 8px;
+  max-width: 40%;
+
   background: rgba(24, 10, 10, 0.8);
   border-radius: 999px;
-  padding: 3px 8px 3px 10px;
   border: 1px solid rgba(244, 63, 94, 0.32);
-  max-width: 48%;
-  justify-content: space-between;
 }
 
+/* ラベルを小さく */
 .lang-select-wrap span {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text-muted);
   white-space: nowrap;
 }
 
-select {
+/* select の無駄な余白を削減 */
+.lang-select-wrap select {
   background: transparent;
   border: none;
   color: var(--text-main);
-  font-size: 12px;
-  padding: 3px 4px;
+  font-size: 11px;
+  padding: 1px 2px;
   outline: none;
   cursor: pointer;
-  max-width: 70%;
+  max-width: 72px;   /* ← 横幅を制限 */
 }
 
-main { margin-top: 8px; }
+/* ========================= */
+
+main {
+  margin-top: 8px;
+}
 
 h1 {
   font-size: 18px;
   margin: 0 0 4px;
-}
-
-.ary-image-01,
-.ary-image-02,
-.ary-image-03 {
-  margin: 8px 0 10px;
-  border-radius: 18px;
-  overflow: hidden;
-  border: 1px solid rgba(244, 63, 94, 0.18);
-  background: #050203;
-}
-
-.ary-image-01 img,
-.ary-image-02 img,
-.ary-image-03 img {
-  display: block;
-  width: 100%;
-  height: auto;
 }
 
 .subtitle {
@@ -194,9 +181,11 @@ h1 {
   box-shadow: 0 0 8px rgba(244, 63, 94, 0.85);
 }
 
-/* ===== 以下、元CSSそのまま保持 ===== */
-
-form { display: flex; flex-direction: column; gap: 16px; }
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
 
 .section-label {
   font-size: 12px;
@@ -211,8 +200,6 @@ form { display: flex; flex-direction: column; gap: 16px; }
   border: 1px solid rgba(244, 63, 94, 0.22);
 }
 
-.question-title { font-size: 13px; font-weight: 600; }
-
 input[type="text"] {
   width: 100%;
   padding: 8px 11px;
@@ -222,7 +209,11 @@ input[type="text"] {
   color: var(--text-main);
 }
 
-.options { display: flex; flex-direction: column; gap: 4px; }
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 
 .option-label {
   display: flex;
@@ -253,5 +244,7 @@ footer {
 }
 
 @media (min-width: 640px) {
-  .card { padding: 20px 22px 24px; }
+  .card {
+    padding: 20px 22px 24px;
+  }
 }
