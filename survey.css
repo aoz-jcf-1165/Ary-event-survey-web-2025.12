@@ -81,8 +81,8 @@ header {
 }
 
 .brand-logo {
-  height: 40px;              /* 高さ基準 */
-  min-width: 80px;           /* 横長 */
+  height: 38px;              /* 高さ基準 */
+  min-width: 60px;           /* 横長 */
   padding: 4px 8px;
   border-radius: 8px;        /* 角丸長方形 */
   overflow: hidden;
