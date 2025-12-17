@@ -115,7 +115,7 @@ header {
 
 .lang-select-wrap {
   display: flex;
-  align-items: center;
+  align-items: left;
   gap: 4px;
   background: rgba(24, 10, 10, 0.8);
   border-radius: 999px;
