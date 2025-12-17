@@ -115,11 +115,11 @@ header {
 
 .lang-select-wrap {
   display: flex;
-  align-items: left;
-  gap: 4px;
+  align-items: center;
+  gap: 2px;
   background: rgba(24, 10, 10, 0.8);
   border-radius: 999px;
-  padding: 3px 4px 3px 8px;
+  padding: 3px 2px 3px 8px;
   border: 1px solid rgba(244, 63, 94, 0.32);
   max-width: 40%;
   justify-content: space-between;
@@ -135,7 +135,7 @@ select {
   background: transparent;
   border: none;
   color: var(--text-main);
-  font-size: 12px;
+  font-size: 10px;
   padding: 3px 2px;
   outline: none;
   cursor: pointer;
