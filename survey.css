@@ -81,20 +81,24 @@ header {
 }
 
 .brand-logo {
-  width: 60px;
-  height: 25px;
+  height: 40px;              /* 高さ基準 */
+  min-width: 96px;           /* 横長 */
+  padding: 4px 8px;
+  border-radius: 8px;        /* 角丸長方形 */
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fff;
+  background: rgba(255,255,255,0.95);
 }
 
+/* 画像の縦横比を尊重 */
 .brand-logo img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
+  max-height: 100%;
+  max-width: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
   display: block;
 }
 
