@@ -1,16 +1,22 @@
-// ==== Cloudflare Worker API エンドポイント ====
-const API_URL = "https://ary-survey-api.aozjakz01.workers.dev/";
+// =====================
+// survey.js (ARY / FULL REPLACE)
+// =====================
+
+// ==== Cloudflare Pages Functions API エンドポイント ====
+// 同一ドメイン: /api/submit
+const API_URL = "/api/submit";
 
 // ==== 多言語翻訳設定 ====
 const TRANSLATION_FILE = "translations.tsv";
 
 // ===== CDN PDF link =====
+// ※ PDFカードをコメントアウトしていても、リンク処理は残しておいてOK
 const CDN_PDF_URL =
-  "https://cdn.jsdelivr.net/gh/aoz-jcf-1165/ary-event-survey-web-2025.12@main/share_document/ary-event-survey-2025-12.pdf";
+  "https://cdn.jsdelivr.net/gh/aoz-jcf-1165/Ary-event-survey-web-2025.12@main/share_document/Ary-event-survey-2025-12.pdf";
 
 const LANGUAGE_LABELS = {
   "en": "English",
-  "de": "Deuaryh",
+  "de": "Deutsch",
   "nl": "Nederlands",
   "fr": "Français",
   "ru": "Русский",
@@ -42,6 +48,7 @@ let isAppReady = false;
 function parseTSV(text) {
   const lines = text.split(/\r?\n/).filter(l => l.trim() !== "");
   if (lines.length < 2) return;
+
   const headerCols = lines[0].split("\t");
   const langs = headerCols.slice(1);
   availableLangs = langs;
@@ -66,7 +73,6 @@ function t(key) {
 }
 
 function applyLanguage(lang) {
-  // ★ 正規化（小文字 + trim）
   currentLang = (lang || "en").toString().trim() || "en";
   localStorage.setItem("ary_lang", currentLang);
 
@@ -78,6 +84,7 @@ function applyLanguage(lang) {
     const translated = t(key);
     if (translated != null) el.textContent = translated;
   });
+
   document.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
     const key = el.dataset.i18nPlaceholder;
     const translated = t(key);
@@ -90,6 +97,8 @@ function populateLanguageSelect() {
   if (!select) return;
 
   select.innerHTML = "";
+
+  // ordered: en first
   const ordered = ["en", ...availableLangs.filter(l => l !== "en")];
 
   // currentLang が TSV に存在しない場合は en に戻す
@@ -104,9 +113,7 @@ function populateLanguageSelect() {
     select.appendChild(opt);
   });
 
-  select.addEventListener("change", () => {
-    applyLanguage(select.value);
-  });
+  select.addEventListener("change", () => applyLanguage(select.value));
 }
 
 function wireCdnLink() {
@@ -126,10 +133,10 @@ async function loadTranslations() {
     const res = await fetch(TRANSLATION_FILE, { cache: "no-store" });
     if (!res.ok) {
       console.error("Failed to load translations.tsv");
-      // 翻訳がなくても動かすが、言語選択が壊れるので送信は許可しない（事故防止）
       setSubmitEnabled(false);
       return;
     }
+
     const text = await res.text();
     parseTSV(text);
     populateLanguageSelect();
@@ -170,9 +177,7 @@ function setFormDisabled(disabled) {
   const form = document.getElementById("surveyForm");
   if (!form) return;
   Array.from(form.elements).forEach(el => {
-    if (el.tagName === "BUTTON" || el.tagName === "INPUT" || el.tagName === "SELECT" || el.tagName === "TEXTAREA") {
-      el.disabled = disabled;
-    }
+    if (["BUTTON","INPUT","SELECT","TEXTAREA"].includes(el.tagName)) el.disabled = disabled;
   });
 }
 
@@ -180,9 +185,7 @@ function encodeCsvRow(rowObj) {
   const headers = ["timestamp", "language", "player_name", "Q2_time", "Q3_time", "Q4_day"];
   return headers.map(h => {
     const v = rowObj[h] ?? "";
-    if (/[",]/.test(v)) {
-      return `"${String(v).replace(/"/g, '""')}"`;
-    }
+    if (/[",]/.test(v)) return `"${String(v).replace(/"/g, '""')}"`;
     return v;
   }).join(",");
 }
@@ -191,6 +194,14 @@ function getSelectedLanguageSafe() {
   const sel = document.getElementById("languageSelect");
   const v = (sel && sel.value) ? sel.value : currentLang;
   return (v || "en").toString().trim() || "en";
+}
+
+async function readResponseSafe(res) {
+  const ct = (res.headers.get("content-type") || "").toLowerCase();
+  if (ct.includes("application/json")) {
+    try { return await res.json(); } catch { return null; }
+  }
+  try { return await res.text(); } catch { return null; }
 }
 
 async function handleSubmit(e) {
@@ -210,35 +221,23 @@ async function handleSubmit(e) {
   setError("error-q03", "");
   setError("error-q04", "");
 
-  const playerName = document.getElementById("playerName").value.trim();
+  const playerName = document.getElementById("playerName")?.value?.trim() || "";
   const q02 = getRadioValue("q02");
   const q03 = getRadioValue("q03");
   const q04 = getRadioValue("q04");
 
   let hasError = false;
-  if (!playerName) {
-    setError("error-playerName", "Required / 必須です");
-    hasError = true;
-  }
-  if (!q02) {
-    setError("error-q02", "Please select one option.");
-    hasError = true;
-  }
-  if (!q03) {
-    setError("error-q03", "Please select one option.");
-    hasError = true;
-  }
-  if (!q04) {
-    setError("error-q04", "Please select one option.");
-    hasError = true;
-  }
+  if (!playerName) { setError("error-playerName", "Required / 必須です"); hasError = true; }
+  if (!q02) { setError("error-q02", "Please select one option."); hasError = true; }
+  if (!q03) { setError("error-q03", "Please select one option."); hasError = true; }
+  if (!q04) { setError("error-q04", "Please select one option."); hasError = true; }
   if (hasError) return;
 
   const timestamp = new Date().toISOString();
 
   // ★ language は currentLang ではなく select から必ず取る（ズレを潰す）
   const language = getSelectedLanguageSafe();
-  applyLanguage(language); // 念のため同期
+  applyLanguage(language);
 
   const row = {
     timestamp,
@@ -249,9 +248,8 @@ async function handleSubmit(e) {
     Q4_day: q04
   };
 
+  // 任意：デバッグ用CSV行（HTMLに無くてもOK）
   const csvRow = encodeCsvRow(row);
-
-  // 元HTMLに csvOutput は無いが、元コードに合わせて保持（存在しない場合は何もしない）
   const output = document.getElementById("csvOutput");
   if (output) output.value = csvRow;
 
@@ -265,8 +263,21 @@ async function handleSubmit(e) {
     });
 
     if (!res.ok) {
-      console.error("Worker error:", res.status, await res.text());
-      setError("form-error", "Server error. Please try again later.");
+      const detail = await readResponseSafe(res);
+      console.error("API error:", res.status, detail);
+
+      // Functions 側が {stage, githubStatus, githubBody} を返すので見える化
+      if (detail && typeof detail === "object") {
+        const msg =
+          `Server error (${res.status}). ` +
+          (detail.stage ? `[${detail.stage}] ` : "") +
+          (detail.githubStatus ? `GitHub:${detail.githubStatus} ` : "") +
+          (detail.error ? `- ${detail.error}` : "");
+        setError("form-error", msg.trim());
+      } else {
+        setError("form-error", `Server error (${res.status}). Please try again later.`);
+      }
+
       setFormDisabled(false);
       return;
     }
@@ -282,7 +293,7 @@ async function handleSubmit(e) {
     if (resultBox) resultBox.style.display = "block";
 
     scrollToBottomSmooth();
-    document.getElementById("surveyForm").reset();
+    document.getElementById("surveyForm")?.reset();
 
   } catch (err) {
     console.error("Network error:", err);
