@@ -1,6 +1,12 @@
 // =====================
-// /functions/api/submit.js (ARY / FULL)
+// /functions/api/submit.js (FULL REPLACE)  [ARY VERSION]
 // =====================
+
+const FIXED_OWNER = "aoz-jcf-1165";
+const FIXED_REPO  = "Ary-event-survey-web-2025.12";
+
+const SURVEY_LABEL = "survey";
+
 export async function onRequest(context) {
   const { request, env } = context;
 
@@ -8,12 +14,10 @@ export async function onRequest(context) {
   const requestId = crypto.randomUUID();
   const now = new Date().toISOString();
 
-  // --- CORS / preflight ---
   if (request.method === "OPTIONS") {
     return json(204, null, corsHeaders());
   }
 
-  // --- POST only ---
   if (request.method !== "POST") {
     return json(
       405,
@@ -26,224 +30,175 @@ export async function onRequest(context) {
           headers: { "Content-Type": "application/json" },
           body_example: {
             language: "en",
-            player_name: "TEST",
+            player_name: "YourName",
             Q2_time: "A",
             Q3_time: "B",
-            Q4_day: "C",
+            Q4_day: "H",
           },
         },
-        requestId,
         time: now,
+        requestId,
         ray,
       },
-      { ...corsHeaders(), "Cache-Control": "no-store" }
+      { ...corsHeaders() }
     );
   }
 
-  // --- ENV ---
-  const token = (env.GITHUB_TOKEN || "").trim();
-  const owner = (env.GITHUB_OWNER || "aoz-jcf-1165").trim();
-  // ★ Ary repo 名を既定に（必要なら Pages の env で上書き）
-  const repo  = (env.GITHUB_REPO  || "Ary-event-survey-web-2025.12").trim();
-
+  const token = (env?.GITHUB_TOKEN || "").trim();
   if (!token) {
     return json(
       500,
       {
         ok: false,
-        error: "Missing GITHUB_TOKEN in Pages project variables (secret).",
-        requestId,
+        message: "Missing GITHUB_TOKEN in Pages project variables (secret).",
         time: now,
+        requestId,
         ray,
       },
-      { ...corsHeaders(), "Cache-Control": "no-store" }
+      corsHeaders()
     );
   }
 
-  // --- Read JSON ---
   let payload;
   try {
     payload = await request.json();
-  } catch (e) {
+  } catch {
     return json(
       400,
-      {
-        ok: false,
-        error: "Invalid JSON body.",
-        detail: safeErr(e),
-        requestId,
-        time: now,
-        ray,
-      },
-      { ...corsHeaders(), "Cache-Control": "no-store" }
+      { ok: false, message: "Invalid JSON body.", time: now, requestId, ray },
+      corsHeaders()
     );
   }
 
-  // --- Validate ---
-  const language = str(payload.language);
-  const player_name = str(payload.player_name);
-  const Q2_time = str(payload.Q2_time);
-  const Q3_time = str(payload.Q3_time);
-  const Q4_day = str(payload.Q4_day);
+  const body = normalizePayload(payload);
 
   const missing = [];
-  if (!player_name) missing.push("player_name");
-  if (!language) missing.push("language");
-  if (!Q2_time) missing.push("Q2_time");
-  if (!Q3_time) missing.push("Q3_time");
-  if (!Q4_day) missing.push("Q4_day");
+  if (!body.player_name) missing.push("player_name");
+  if (!body.language) missing.push("language");
+  if (!body.Q2_time) missing.push("Q2_time");
+  if (!body.Q3_time) missing.push("Q3_time");
+  if (!body.Q4_day) missing.push("Q4_day");
 
   if (missing.length) {
     return json(
       400,
-      {
-        ok: false,
-        error: "Missing required fields.",
-        missing,
-        received: { language, player_name, Q2_time, Q3_time, Q4_day },
-        requestId,
-        time: now,
-        ray,
-      },
-      { ...corsHeaders(), "Cache-Control": "no-store" }
+      { ok: false, missing, time: now, requestId, ray },
+      corsHeaders()
     );
   }
 
-  // --- Prepare Issue ---
-  const stamp = now;
-  const issueTitle = `survey:${player_name}`;
-  const issueBody = [
-    `timestamp: ${stamp}`,
-    `language: ${language}`,
-    `player_name: ${player_name}`,
-    `Q2_time: ${Q2_time}`,
-    `Q3_time: ${Q3_time}`,
-    `Q4_day: ${Q4_day}`,
-    "",
-    "```json",
-    JSON.stringify({ timestamp: stamp, language, player_name, Q2_time, Q3_time, Q4_day }, null, 2),
-    "```",
-  ].join("\n");
+  const issueTitle = `Survey Response: ${body.player_name}`;
+  const issueBodyJson = {
+    timestamp: now,
+    ...body,
+    source: "pages_function",
+    requestId,
+    ray,
+  };
 
-  const ghUrl = `https://api.github.com/repos/${owner}/${repo}/issues`;
+  const issueBodyText =
+    `<!-- survey_response -->\n` +
+    `\n` +
+    "```json\n" +
+    JSON.stringify(issueBodyJson, null, 2) +
+    "\n```\n";
 
-  // --- GitHub request with timeout ---
-  const controller = new AbortController();
-  const timeoutMs = 15000;
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-
-  let ghRes, ghText;
   try {
-    ghRes = await fetch(ghUrl, {
-      method: "POST",
-      signal: controller.signal,
-      headers: {
-        "Authorization": `Bearer ${token}`,
-        "Accept": "application/vnd.github+json",
-        "Content-Type": "application/json",
-        "User-Agent": "cf-pages-functions-survey",
-      },
-      body: JSON.stringify({
-        title: issueTitle,
-        body: issueBody,
-        labels: ["survey"],
-      }),
+    const created = await createIssue({
+      token,
+      owner: FIXED_OWNER,
+      repo: FIXED_REPO,
+      title: issueTitle,
+      body: issueBodyText,
+      labels: [SURVEY_LABEL],
     });
 
-    ghText = await ghRes.text();
-  } catch (e) {
-    clearTimeout(timer);
     return json(
-      503,
+      200,
       {
-        ok: false,
-        stage: "fetch_github",
-        error: "Upstream request failed (fetch/GitHub).",
-        detail: safeErr(e),
-        timeoutMs,
-        ghUrl,
-        requestId,
+        ok: true,
+        message: "Submitted.",
         time: now,
+        requestId,
         ray,
+        issue: { number: created.number, url: created.html_url },
       },
-      { ...corsHeaders(), "Cache-Control": "no-store" }
+      corsHeaders()
     );
-  } finally {
-    clearTimeout(timer);
-  }
+  } catch (err) {
+    const msg = String(err?.message || err || "Unknown error");
+    const status = err?.status || 502;
 
-  if (!ghRes.ok) {
     return json(
-      502,
-      {
-        ok: false,
-        stage: "github_non_2xx",
-        error: "GitHub API returned error.",
-        githubStatus: ghRes.status,
-        githubStatusText: ghRes.statusText,
-        githubBody: limitText(ghText, 4000),
-        hint: [
-          "1) PagesのGITHUB_TOKENが repo / issues 作成権限を持つか確認",
-          "2) owner/repo 名が正しいか確認（Ary repo名）",
-          "3) GitHub側のレート制限・障害の可能性",
-        ],
-        requestId,
-        time: now,
-        ray,
-      },
-      { ...corsHeaders(), "Cache-Control": "no-store" }
+      status,
+      { ok: false, message: "Server error.", detail: msg, time: now, requestId, ray },
+      corsHeaders()
     );
   }
+}
 
-  let ghJson = null;
-  try { ghJson = JSON.parse(ghText); } catch (_) {}
+function normalizePayload(p) {
+  const obj = (p && typeof p === "object") ? p : {};
+  return {
+    language: safeStr(obj.language),
+    player_name: safeStr(obj.player_name),
+    Q2_time: safeStr(obj.Q2_time),
+    Q3_time: safeStr(obj.Q3_time),
+    Q4_day: safeStr(obj.Q4_day),
+  };
+}
 
-  return json(
-    200,
-    {
-      ok: true,
-      message: "Submitted.",
-      requestId,
-      time: now,
-      ray,
-      issue: ghJson ? { number: ghJson.number, url: ghJson.html_url } : null,
+function safeStr(v) {
+  if (v == null) return "";
+  return String(v).trim();
+}
+
+async function createIssue({ token, owner, repo, title, body, labels }) {
+  const url = `https://api.github.com/repos/${owner}/${repo}/issues`;
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Accept": "application/vnd.github+json",
+      "Content-Type": "application/json",
+      "User-Agent": "survey-pages-function",
     },
-    { ...corsHeaders(), "Cache-Control": "no-store" }
-  );
+    body: JSON.stringify({
+      title,
+      body,
+      labels: Array.isArray(labels) ? labels : undefined,
+    }),
+  });
+
+  const data = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    const e = new Error(
+      `GitHub API error: ${res.status} ${res.statusText} ` +
+      (data?.message ? `- ${data.message}` : "")
+    );
+    e.status = res.status;
+    throw e;
+  }
+
+  return data;
 }
 
 function corsHeaders() {
   return {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+    "Access-Control-Allow-Methods": "POST, OPTIONS, GET",
     "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Max-Age": "86400",
   };
 }
 
-function json(status, obj, headers = {}) {
-  // 204の時はbody無し
-  if (status === 204) return new Response(null, { status, headers });
-
-  return new Response(JSON.stringify(obj), {
-    status,
-    headers: {
-      "content-type": "application/json; charset=utf-8",
-      ...headers,
-    },
-  });
-}
-
-function str(v) {
-  return (v == null ? "" : String(v)).trim();
-}
-
-function safeErr(e) {
-  if (!e) return null;
-  return { name: e.name, message: e.message };
-}
-
-function limitText(s, max = 2000) {
-  const t = (s == null ? "" : String(s));
-  if (t.length <= max) return t;
-  return t.slice(0, max) + ` ...[truncated ${t.length - max} chars]`;
+function json(status, data, extraHeaders = {}) {
+  const headers = {
+    "Content-Type": "application/json; charset=utf-8",
+    "Cache-Control": "no-store",
+    ...extraHeaders,
+  };
+  return new Response(data == null ? null : JSON.stringify(data, null, 2), { status, headers });
 }
