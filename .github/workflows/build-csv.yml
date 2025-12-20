@@ -23,7 +23,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Rebuild data/survey.csv from OPEN issues with label "survey" (latest per player)
+      - name: Rebuild data/survey.csv (OPEN issues, robust parse, latest per player)
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -46,52 +46,174 @@ jobs:
               return s;
             }
 
+            function normalizeKey(k) {
+              return String(k || '')
+                .trim()
+                .toLowerCase()
+                .replace(/[\s\-]/g, '_');
+            }
+
+            function parseLooseKV(body) {
+              // key: value / key = value の行を拾う
+              const obj = {};
+              const lines = String(body || '').split(/\r?\n/);
+              for (const line of lines) {
+                const m = line.match(/^\s*([A-Za-z0-9_\-]+)\s*[:=]\s*(.+?)\s*$/);
+                if (!m) continue;
+                const k = normalizeKey(m[1]);
+                const v = m[2];
+                obj[k] = v;
+              }
+              return Object.keys(obj).length ? obj : null;
+            }
+
+            function extractJsonFromBody(body) {
+              const text = String(body || '');
+
+              // ```json ... ```
+              const m = text.match(/```json\s*([\s\S]*?)\s*```/i);
+              if (m) {
+                try { return JSON.parse(m[1]); } catch (_) {}
+              }
+
+              // 本文全体が JSON
+              try { return JSON.parse(text); } catch (_) {}
+
+              // 本文中に最初の { ... } を含むケース（雑だけど救済）
+              const s = text.indexOf('{');
+              const e = text.lastIndexOf('}');
+              if (s >= 0 && e > s) {
+                const candidate = text.slice(s, e + 1);
+                try { return JSON.parse(candidate); } catch (_) {}
+              }
+
+              return null;
+            }
+
+            function titleToPlayer(title) {
+              const t = String(title || '').trim();
+
+              // よくあるパターン
+              const patterns = [
+                /^Survey Response:\s*(.+)$/i,
+                /^Survey response from:\s*(.+)$/i,
+                /^Survey Response;\s*(.+)$/i,
+                /^survey:\s*(.+)$/i,
+                /^survey;\s*(.+)$/i,
+              ];
+
+              for (const re of patterns) {
+                const m = t.match(re);
+                if (m && m[1]) return m[1].trim();
+              }
+
+              return '';
+            }
+
+            function isSurveyIssue(issue) {
+              const title = String(issue.title || '');
+              const labels = (issue.labels || []).map(l => (typeof l === 'string' ? l : l.name)).filter(Boolean);
+              const hasSurveyLabel = labels.some(x => String(x).toLowerCase() === 'survey');
+              const looksSurveyTitle = /survey/i.test(title);
+              return hasSurveyLabel || looksSurveyTitle;
+            }
+
+            function toIsoOrEmpty(v) {
+              if (!v) return '';
+              const s = String(v).trim();
+              const d = new Date(s);
+              if (!isNaN(d.getTime())) return d.toISOString();
+              return s; // 壊れていても比較用に残す
+            }
+
             function parseIssueToRow(issue) {
               const body = issue.body || '';
-              let data = null;
+              const title = issue.title || '';
 
-              // ```json ... ``` を優先
-              const m = body.match(/```json\s*([\s\S]*?)\s*```/i);
-              if (m) {
-                try { data = JSON.parse(m[1]); } catch (_) {}
+              let data = extractJsonFromBody(body);
+
+              if (!data || typeof data !== 'object') {
+                data = parseLooseKV(body);
               }
 
-              // fallback: body全体がJSON
-              if (!data) {
-                try { data = JSON.parse(body); } catch (_) {}
-              }
-
-              if (!data || typeof data !== 'object') return null;
+              // どちらでも取れない場合でも、タイトルと created_at で最低限救う
+              const playerFromTitle = titleToPlayer(title);
 
               const row = {
-                timestamp: data.timestamp || issue.created_at || new Date().toISOString(),
-                language: data.language || '',
-                player_name: data.player_name || '',
-                Q2_time: data.Q2_time || '',
-                Q3_time: data.Q3_time || '',
-                Q4_day: data.Q4_day || '',
+                timestamp: '',
+                language: '',
+                player_name: '',
+                Q2_time: '',
+                Q3_time: '',
+                Q4_day: '',
               };
 
+              if (data && typeof data === 'object') {
+                // キー揺れ吸収
+                const get = (...keys) => {
+                  for (const k of keys) {
+                    const kk = normalizeKey(k);
+                    if (data[k] != null) return data[k];
+                    if (data[kk] != null) return data[kk];
+                  }
+                  // data側キーを正規化して探す
+                  for (const [dk, dv] of Object.entries(data)) {
+                    const nk = normalizeKey(dk);
+                    if (keys.map(normalizeKey).includes(nk)) return dv;
+                  }
+                  return '';
+                };
+
+                row.timestamp   = get('timestamp', 'time', 'submitted_at', 'created_at');
+                row.language    = get('language', 'lang');
+                row.player_name = get('player_name', 'player', 'name');
+                row.Q2_time     = get('Q2_time', 'q2_time', 'q2');
+                row.Q3_time     = get('Q3_time', 'q3_time', 'q3');
+                row.Q4_day      = get('Q4_day', 'q4_day', 'q4');
+              }
+
+              if (!row.player_name) row.player_name = playerFromTitle;
+              if (!row.timestamp)   row.timestamp = issue.created_at;
+
+              // 最低条件：player_name が無いものは除外
               if (!row.player_name) return null;
+
+              // timestamp を比較しやすく
+              row.timestamp = toIsoOrEmpty(row.timestamp);
+
+              // 文字列化&トリム
+              row.language    = String(row.language || '').trim();
+              row.player_name = String(row.player_name || '').trim();
+              row.Q2_time     = String(row.Q2_time || '').trim();
+              row.Q3_time     = String(row.Q3_time || '').trim();
+              row.Q4_day      = String(row.Q4_day || '').trim();
+
               return row;
             }
 
-            // --- OPEN + label: survey だけ取得 ---
+            // --- OPEN issue 全件取得（ラベル絞りはしない） ---
             const all = await github.paginate(
               github.rest.issues.listForRepo,
-              { owner, repo, state: 'open', labels: 'survey', per_page: 100 }
+              { owner, repo, state: 'open', per_page: 100 }
             );
 
-            const issues = all.filter(x => !x.pull_request);
+            const issues = all.filter(x => !x.pull_request).filter(isSurveyIssue);
 
-            // --- player_name ごとに最新(timestamp最大)だけ残す ---
+            // --- player_name ごとに最新だけ ---
             const latestByPlayer = new Map();
+
+            function tsValue(ts) {
+              const d = new Date(ts);
+              if (!isNaN(d.getTime())) return d.getTime();
+              // ISOでない/壊れている場合のフォールバック
+              return String(ts);
+            }
 
             for (const issue of issues) {
               const row = parseIssueToRow(issue);
               if (!row) continue;
 
-              const key = String(row.player_name);
+              const key = row.player_name;
 
               const prev = latestByPlayer.get(key);
               if (!prev) {
@@ -99,15 +221,19 @@ jobs:
                 continue;
               }
 
-              // timestamp はISO想定：文字列比較でOK（安全のためDate比較も可能）
-              if (String(row.timestamp) > String(prev.timestamp)) {
-                latestByPlayer.set(key, row);
+              const a = tsValue(row.timestamp);
+              const b = tsValue(prev.timestamp);
+
+              if (typeof a === 'number' && typeof b === 'number') {
+                if (a > b) latestByPlayer.set(key, row);
+              } else {
+                if (String(row.timestamp) > String(prev.timestamp)) latestByPlayer.set(key, row);
               }
             }
 
             const rows = Array.from(latestByPlayer.values());
 
-            // 出力を安定化（timestamp順）
+            // 出力安定化（timestamp昇順）
             rows.sort((a,b) => String(a.timestamp).localeCompare(String(b.timestamp)));
 
             const lines = [];
@@ -117,8 +243,7 @@ jobs:
             }
 
             fs.writeFileSync(outPath, lines.join('\n') + '\n', 'utf8');
-
-            console.log(`Wrote ${rows.length} rows (latest per player, label=survey, open only) to ${outPath}`);
+            console.log(`OPEN survey-like issues: ${issues.length}, CSV rows (latest per player): ${rows.length}`);
 
       - name: Commit and push if changed
         run: |
@@ -129,5 +254,5 @@ jobs:
             echo "No changes."
             exit 0
           fi
-          git commit -m "Update data/survey.csv (open issues, label=survey, latest per player)"
+          git commit -m "Update data/survey.csv (open issues, robust parse, latest per player)"
           git push
