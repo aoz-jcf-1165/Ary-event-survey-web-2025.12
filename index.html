@@ -7,6 +7,9 @@
 
   <!-- CSS 分離 -->
   <link rel="stylesheet" href="./survey.css" />
+
+  <!-- (optional) 共有/検索での表示用。デザインに影響なし -->
+  <meta name="description" content="Ary Event Survey - 2025.12 (Multilingual Survey Form)" />
 </head>
 
 <body>
@@ -26,11 +29,18 @@
 
           <div class="lang-select-wrap">
             <span>Lang:</span>
-            <select id="languageSelect"></select>
+            <select id="languageSelect" aria-label="Language"></select>
           </div>
         </header>
 
         <main>
+          <!-- JS 無効時の安全装置（デザイン崩れを避けるため最小表示） -->
+          <noscript>
+            <div class="error form-error" style="display:block; margin: 10px 0;">
+              This survey requires JavaScript to run. Please enable JavaScript and reload the page.
+            </div>
+          </noscript>
+
           <h1 data-i18n="app_title">ary Event Survey - 2025.12</h1>
 
           <div class="ary-image-01">
@@ -171,19 +181,19 @@
                 <label class="option-label">
                   <input type="radio" name="q03" value="A" />
                   <span class="option-code">A</span>
-                  <span data-i18n="q03_opt_A">Server Time around 04:00 - 05:00</span>
+                  <span data-i18n="q03_opt_A">Server Time 04:00 - 05:00</span>
                 </label>
 
                 <label class="option-label">
                   <input type="radio" name="q03" value="B" />
                   <span class="option-code">B</span>
-                  <span data-i18n="q03_opt_B">Server Time around 13:00 - 14:00</span>
+                  <span data-i18n="q03_opt_B">Server Time 13:00 - 14:00</span>
                 </label>
 
                 <label class="option-label">
                   <input type="radio" name="q03" value="C" />
                   <span class="option-code">C</span>
-                  <span data-i18n="q03_opt_C">Server Time around 21:00 - 22:00</span>
+                  <span data-i18n="q03_opt_C">Server Time 21:00 - 22:00</span>
                 </label>
 
                 <label class="option-label">
@@ -210,19 +220,13 @@
 
               <div class="question-header">
                 <div class="question-title" data-i18n="q04_title">
-                  Please choose your first choice of day.
+                  Please choose your first choice day.
                 </div>
                 <div class="badge">Q04</div>
               </div>
 
               <div class="helper" data-i18n="note_schedule-03">
-                The schedule is just a general guideline, and actual times may vary depending on the situation.
-              </div>
-              <div class="helper" data-i18n="note_schedule-04">
-                Doom Arena cannot be held on Tuesday, Thursday, or Saturday. In addition, it cannot be started while Elite War is in progress.
-              </div>
-              <div class="helper" data-i18n="note_schedule-05">
-                Zombie Uprise cannot be started on Tuesdays or Thursdays.
+                Doom Arena War cannot be held on Tuesday / Thursday / Saturday. Also, Elite War cannot be held on weekdays. Zombie Uprise cannot be held on Tuesday / Thursday.
               </div>
 
               <div class="options">
@@ -303,7 +307,7 @@
     </div>
   </div>
 
-  <!-- JS 分離 -->
-  <script src="./survey.js" defer></script>
+  <!-- JS 分離（★キャッシュ事故防止のため ?v= を付与） -->
+  <script src="./survey.js?v=20251220-01" defer></script>
 </body>
 </html>
