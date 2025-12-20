@@ -2,52 +2,98 @@ name: Collect Survey Responses (Rebuild CSV)
 
 on:
   issues:
-    types: [labeled]
+    types:
+      - opened
+      - edited
+      - reopened
+      - labeled
+      - unlabeled
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: read
+
+concurrency:
+  group: survey-csv
+  cancel-in-progress: false
 
 jobs:
   rebuild:
-    # survey ラベルが付いたときだけ実行
-    if: github.event.label.name == 'survey'
     runs-on: ubuntu-latest
 
-    concurrency:
-      group: survey-csv
-      cancel-in-progress: false
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Rebuild data/survey.csv from open survey issues
+      - name: Rebuild data/survey.csv from OPEN issues with label "survey" (latest per player)
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const fs = require('fs');
+            /**
+             * This workflow is triggered on issue events.
+             * To avoid "red errors" from running before label is applied,
+             * we DO NOT fail when the issue does not have "survey" label.
+             * We simply rebuild CSV from all OPEN issues with label "survey".
+             */
 
             const owner = context.repo.owner;
             const repo  = context.repo.repo;
 
-            const headers = [
-              'timestamp',
-              'language',
-              'player_name',
-              'Q2_time',
-              'Q3_time',
-              'Q4_day',
-            ];
+            // ----- If triggered by an issue event, we can optionally ignore non-survey issues.
+            // But even if it is not survey, rebuilding is still safe.
+            // We keep it always-safe: never throw due to missing label.
+            const payloadIssue = context.payload.issue || null;
+            if (payloadIssue) {
+              const labels = (payloadIssue.labels || []).map(l => (typeof l === 'string' ? l : l.name)).filter(Boolean);
+              const isSurvey = labels.includes('survey');
+
+              // If opened/edited/reopened without survey label, do nothing but succeed.
+              // This prevents the "always one red error" symptom.
+              const action = context.payload.action || '';
+              if (!isSurvey && (action === 'opened' || action === 'edited' || action === 'reopened')) {
+                console.log(`Issue event "${action}" without "survey" label -> skip (success).`);
+                return;
+              }
+            }
+
+            const HEADERS = ['timestamp','language','player_name','Q2_time','Q3_time','Q4_day'];
 
             function escapeCSV(v) {
               if (v == null) return '';
               const s = String(v);
-              return /[",\n]/.test(s)
-                ? `"${s.replace(/"/g, '""')}"`
-                : s;
+              return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
             }
 
-            // open + survey ラベル付き issue を全件取得
+            /**
+             * Extract a field from issue body.
+             * Supports:
+             * 1) ```json { ... } ```
+             * 2) key: value
+             * 3) "key": "value"
+             */
+            function extractField(body, key) {
+              if (!body) return '';
+
+              // 1) JSON code block
+              const jsonBlock = body.match(/```json\s*([\s\S]*?)\s*```/i);
+              if (jsonBlock) {
+                try {
+                  const obj = JSON.parse(jsonBlock[1]);
+                  if (obj && obj[key] != null) return String(obj[key]).trim();
+                } catch (e) {}
+              }
+
+              // 2) key: value (line-based)
+              const m1 = body.match(new RegExp(`^${key}\\s*:\\s*(.*)$`, 'mi'));
+              if (m1) return (m1[1] || '').trim();
+
+              // 3) "key": "value"
+              const m2 = body.match(new RegExp(`"${key}"\\s*:\\s*"([^"]*)"`, 'i'));
+              if (m2) return (m2[1] || '').trim();
+
+              return '';
+            }
+
+            // ----- Fetch OPEN issues with label "survey"
             const issues = await github.paginate(
               github.rest.issues.listForRepo,
               {
@@ -59,33 +105,85 @@ jobs:
               }
             );
 
-            const rows = [headers.join(',')];
+            console.log(`Fetched issues: ${issues.length}`);
+
+            // ----- Parse and keep only valid rows
+            // Also: Keep ONLY latest per player_name (new answer overwrites old)
+            const latestByPlayer = new Map(); // player_name -> {timestamp, row}
+
+            let parsed = 0;
+            let skippedInvalid = 0;
 
             for (const issue of issues) {
+              // exclude PRs
+              if (issue.pull_request) continue;
+
               const body = issue.body || '';
-              const get = (k) => {
-                const m = body.match(new RegExp(`^${k}:\\s*(.*)$`, 'mi'));
-                return m ? m[1].trim() : '';
-              };
 
-              const row = [
-                issue.created_at,
-                get('language'),
-                get('player_name'),
-                get('Q2_time'),
-                get('Q3_time'),
-                get('Q4_day'),
-              ].map(escapeCSV);
+              const language    = extractField(body, 'language');
+              const player_name = extractField(body, 'player_name');
+              const Q2_time     = extractField(body, 'Q2_time');
+              const Q3_time     = extractField(body, 'Q3_time');
+              const Q4_day      = extractField(body, 'Q4_day');
 
-              rows.push(row.join(','));
+              // Must-have fields (prevents timestamp-only empty rows)
+              if (!player_name || !Q2_time || !Q3_time || !Q4_day) {
+                skippedInvalid++;
+                continue;
+              }
+
+              const timestamp = issue.created_at; // stable and always exists
+              const rowArr = [timestamp, language, player_name, Q2_time, Q3_time, Q4_day];
+              parsed++;
+
+              // Keep only latest per player_name
+              const prev = latestByPlayer.get(player_name);
+              if (!prev || new Date(timestamp).getTime() > new Date(prev.timestamp).getTime()) {
+                latestByPlayer.set(player_name, { timestamp, rowArr });
+              }
             }
 
-            fs.writeFileSync('data/survey.csv', rows.join('\n'));
+            // ----- Build CSV sorted by timestamp desc (latest first)
+            const rows = [];
+            for (const v of latestByPlayer.values()) rows.push(v.rowArr);
 
-      - name: Commit CSV
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/survey.csv
-          git commit -m "Update data/survey.csv (open survey issues only)" || echo "No changes"
-          git push
+            rows.sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime());
+
+            const lines = [];
+            lines.push(HEADERS.join(','));
+            for (const r of rows) {
+              lines.push(r.map(escapeCSV).join(','));
+            }
+            const csvText = lines.join('\n') + '\n';
+
+            console.log(`Parsed valid rows: ${parsed}`);
+            console.log(`Skipped invalid rows: ${skippedInvalid}`);
+            console.log(`Unique players kept (latest per player): ${rows.length}`);
+
+            // ----- Commit data/survey.csv via GitHub API
+            const path = 'data/survey.csv';
+
+            let sha = undefined;
+            try {
+              const res = await github.rest.repos.getContent({ owner, repo, path });
+              if (res && res.data && !Array.isArray(res.data) && res.data.sha) {
+                sha = res.data.sha;
+              }
+            } catch (e) {
+              // file may not exist yet -> create
+            }
+
+            const contentBase64 = Buffer.from(csvText, 'utf8').toString('base64');
+
+            await github.rest.repos.createOrUpdateFileContents({
+              owner,
+              repo,
+              path,
+              message: 'Update data/survey.csv (open survey issues, latest per player)',
+              content: contentBase64,
+              sha,
+              committer: { name: 'github-actions[bot]', email: '41898282+github-actions[bot]@users.noreply.github.com' },
+              author:    { name: 'github-actions[bot]', email: '41898282+github-actions[bot]@users.noreply.github.com' },
+            });
+
+            console.log(`Committed ${path} successfully.`);
