@@ -1,32 +1,28 @@
-name: Build Survey CSV
+name: Build Survey CSV (Nightly)
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 18 * * *"   # UTC 18:00 → JST 翌日 03:00
-  issues:
-    types: [opened, edited, reopened, closed]
+    - cron: "0 18 * * *"  # UTC 18:00 -> JST 03:00
 
 permissions:
   contents: write
   issues: read
 
+concurrency:
+  group: survey-csv
+  cancel-in-progress: false
+
 jobs:
   rebuild:
     runs-on: ubuntu-latest
-
-    concurrency:
-      group: survey-csv
-      cancel-in-progress: false
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Rebuild data/survey.csv from open issues only
-        id: rebuild
+      - name: Rebuild data/survey.csv from OPEN issues (latest per player)
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -37,6 +33,8 @@ jobs:
             const owner = context.repo.owner;
             const repo  = context.repo.repo;
 
+            const OUT_FILE = path.join(process.cwd(), 'data', 'survey.csv');
+
             const headers = [
               'timestamp',
               'language',
@@ -46,123 +44,92 @@ jobs:
               'Q4_day',
             ];
 
-            const ALLOWED_LANGS = new Set([
-              "en","de","nl","fr","ru","es","pt","it","zh-hans","ja","ko","zh-hant","ar","th","vi","tr","pl","ms","id"
-            ]);
-
             function escapeCSV(value) {
               if (value == null) return '';
               const s = String(value);
-              if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+              if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
               return s;
             }
 
-            function normalizeLang(v) {
-              const s = (v == null ? '' : String(v)).trim().toLowerCase();
-              if (!s) return 'en';
-              if (s === 'zh') return 'zh-hans';
-              if (!ALLOWED_LANGS.has(s)) return 'en';
-              return s;
+            function extractJsonFromIssueBody(body) {
+              if (!body) return null;
+              const m = body.match(/```json\s*([\s\S]*?)\s*```/i);
+              if (!m) return null;
+              try { return JSON.parse(m[1]); } catch { return null; }
             }
 
-            function parseIssueBody(body) {
-              const lines = (body || '').split(/\r?\n/);
-              const map = {};
+            async function listAllOpenIssues() {
+              const per_page = 100;
+              let page = 1;
+              let all = [];
 
-              for (const line of lines) {
-                const m = line.match(/^\s*\|\s*([^|]+?)\s*\|\s*(.*?)\s*\|\s*$/);
-                if (m) {
-                  const key = m[1].trim();
-                  const value = m[2].trim();
-                  map[key] = value;
-                }
+              while (true) {
+                const res = await github.rest.issues.listForRepo({
+                  owner,
+                  repo,
+                  state: 'open',
+                  per_page,
+                  page,
+                });
+                const items = res.data || [];
+                const issuesOnly = items.filter(x => !x.pull_request);
+                all = all.concat(issuesOnly);
+
+                if (items.length < per_page) break;
+                page += 1;
               }
-
-              const rowObject = {
-                timestamp: map['timestamp'] || '',
-                language: normalizeLang(map['language']),
-                player_name: map['player_name'] || '',
-                Q2_time: map['Q2_time'] || map['Q02_time'] || map['Q02 (time)'] || '',
-                Q3_time: map['Q3_time'] || map['Q03_time'] || map['Q03 (time)'] || '',
-                Q4_day: map['Q4_day'] || map['Q04_day'] || map['Q04 (day)'] || '',
-              };
-
-              const hasValue = Object.values(rowObject).some(v => (v || '') !== '');
-              return hasValue ? rowObject : null;
+              return all;
             }
 
-            core.info(`Fetching OPEN issues only.`);
-
-            const issues = await github.paginate(
-              github.rest.issues.listForRepo,
-              { owner, repo, state: 'open', per_page: 100 }
-            );
+            const issues = await listAllOpenIssues();
 
             const latestByPlayer = new Map();
 
             for (const issue of issues) {
-              if (!issue.title?.startsWith("Survey response from:")) continue;
+              const data = extractJsonFromIssueBody(issue.body);
+              if (!data) continue;
 
-              const rowObject = parseIssueBody(issue.body || '');
-              if (!rowObject?.player_name) continue;
+              const row = {
+                timestamp: data.timestamp || '',
+                language: data.language || '',
+                player_name: data.player_name || '',
+                Q2_time: data.Q2_time || '',
+                Q3_time: data.Q3_time || '',
+                Q4_day: data.Q4_day || '',
+              };
 
-              const key = rowObject.player_name;
-              const createdAt = new Date(issue.created_at);
+              if (!row.player_name || !row.timestamp) continue;
 
-              const existing = latestByPlayer.get(key);
-              if (!existing || createdAt > existing.createdAt) {
-                latestByPlayer.set(key, { createdAt, row: rowObject });
+              const key = row.player_name;
+              const prev = latestByPlayer.get(key);
+
+              if (!prev || String(row.timestamp) > String(prev.timestamp)) {
+                latestByPlayer.set(key, row);
               }
             }
 
-            // NOTE: ここは元ファイルにタイポがあり得ます。
-            // 正しくは [...latestByPlayer.values()] です（CSVが空になる/エラーになるのを防ぐ）
-            const finalRows = [...latestByPlayer.values()]
-              .sort((a, b) => a.createdAt - b.createdAt)
-              .map(e => e.row);
+            const rows = Array.from(latestByPlayer.values())
+              .sort((a, b) => String(a.player_name).localeCompare(String(b.player_name)));
 
-            const dataDir = path.join(process.cwd(), 'data');
-            fs.mkdirSync(dataDir, { recursive: true });
+            fs.mkdirSync(path.dirname(OUT_FILE), { recursive: true });
 
-            const csvPath = path.join(dataDir, 'survey.csv');
-
-            let csv = headers.join(',');
-            if (finalRows.length) {
-              csv += '\n' + finalRows
-                .map(r => headers.map(h => escapeCSV(r[h])).join(','))
-                .join('\n');
+            const lines = [];
+            lines.push(headers.join(','));
+            for (const r of rows) {
+              lines.push(headers.map(h => escapeCSV(r[h])).join(','));
             }
-            csv += '\n';
+            fs.writeFileSync(OUT_FILE, lines.join('\n') + '\n', 'utf-8');
 
-            fs.writeFileSync(csvPath, csv, 'utf8');
+            console.log(`Wrote ${rows.length} rows to ${OUT_FILE}`);
 
-            core.setOutput('csv_path', csvPath);
-            core.setOutput('row_count', finalRows.length);
-
-      - name: Commit and push changes (with rebase & retry)
-        env:
-          BRANCH: ${{ github.event.repository.default_branch }}
+      - name: Commit & push if changed
         run: |
-          git config user.name "${GITHUB_ACTOR}"
-          git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
-
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/survey.csv
           if git diff --cached --quiet; then
-            echo "No updates to commit."
+            echo "No changes."
             exit 0
           fi
-
-          git commit -m "Nightly rebuild survey.csv"
-
-          for i in 1 2 3 4 5; do
-            git pull --rebase origin "$BRANCH" || true
-            if git push origin HEAD:"$BRANCH"; then
-              echo "Push success"
-              exit 0
-            fi
-            echo "Push failed, retry $i..."
-            sleep 2
-          done
-
-          echo "Push failed after retries"
-          exit 1
+          git commit -m "Nightly rebuild survey.csv (open issues, latest per player)"
+          git push
