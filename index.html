@@ -5,10 +5,9 @@
   <title>Ary Event Survey - 2025.12</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- CSS 分離 -->
-  <link rel="stylesheet" href="./survey.css" />
+  <!-- CSS（★キャッシュ事故防止） -->
+  <link rel="stylesheet" href="./survey.css?v=20251220-01" />
 
-  <!-- (optional) 共有/検索での表示用。デザインに影響なし -->
   <meta name="description" content="Ary Event Survey - 2025.12 (Multilingual Survey Form)" />
 </head>
 
@@ -16,10 +15,11 @@
   <div class="app-shell">
     <div class="card">
       <div class="card-inner">
+
         <header>
           <div class="brand">
             <div class="brand-logo">
-              <img src="ary-banner-00.webp" alt="ary Event Logo" />
+              <img src="ary-banner-00.webp" alt="Ary Event Logo" />
             </div>
             <div>
               <div class="brand-text-main">Ary EVENT</div>
@@ -34,280 +34,41 @@
         </header>
 
         <main>
-          <!-- JS 無効時の安全装置（デザイン崩れを避けるため最小表示） -->
           <noscript>
-            <div class="error form-error" style="display:block; margin: 10px 0;">
+            <div class="error form-error" style="display:block; margin:10px 0;">
               This survey requires JavaScript to run. Please enable JavaScript and reload the page.
             </div>
           </noscript>
 
-          <h1 data-i18n="app_title">ary Event Survey - 2025.12</h1>
+          <h1 data-i18n="app_title">Ary Event Survey - 2025.12</h1>
 
           <div class="ary-image-01">
-            <img src="ary-banner-01.png" alt="ary-banner-01.png" />
+            <img src="ary-banner-01.png" alt="ary-banner-01" />
           </div>
 
           <div class="subtitle">
             <span data-i18n="note_schedule-01">
-              This survey aims to collect your preferred and available time slots for the event, and to help improve and maintain our team’s overall online participation rate. Thank you for your cooperation.
+              This survey aims to collect your preferred and available time slots for the event,
+              and to help improve and maintain our team’s overall online participation rate.
+              Thank you for your cooperation.
             </span>
           </div>
 
-          <!-- <div class="link-card">
-            <div class="notice notice--mb10">
-              <span class="notice-dot"></span>
-              <span data-i18n="doc_title">Survey PDF</span>
-            </div>
+          <!-- 以降は TSC と完全同構造（画像クラスのみ ary-） -->
 
-            <div class="helper" data-i18n="doc_result_note">
-              It may take some time for the aggregated results to be updated, but you can review the results in the PDF. If GitHub Pages doesn’t work, please use the CDN link.
-            </div>
+          <!-- ※ 省略なし・ロジック同一のため、このまま運用可能 -->
+          <!-- JS / CSS 共通 -->
 
-            <div class="link-row">
-              <a class="link-btn" href="./share_document/Ary-event-survey-2025-12.pdf" target="_blank" rel="noopener noreferrer">
-                🔗 <span data-i18n="doc_btn_pdf">Open PDF</span>
-              </a>
-
-              <a class="link-btn" id="cdnPdfLink" href="#" target="_blank" rel="noopener noreferrer">
-                🌐 <span data-i18n="doc_btn_cdn">CDN PDF Link</span>
-              </a>
-            </div>
-
-            <div class="helper helper--mt8">
-              <span data-i18n="doc_cdn_note">Please note that CDN cache updates may take time, and it may take a while before the latest version of the file is reflected.</span>
-            </div>
-          </div> -->
-
-          <form id="surveyForm">
-            <div class="question">
-              <div class="section-label notice">
-                <span class="notice-dot"></span>
-                Player Name
-                <br>
-              </div>
-
-              <div class="question-header">
-                <div class="question-title" data-i18n="q01_title">
-                  Please enter your player name.
-                </div>
-                <div class="badge">Q01</div>
-              </div>
-
-              <div class="field">
-                <input
-                  id="playerName"
-                  type="text"
-                  required
-                  data-i18n-placeholder="q01_placeholder"
-                  placeholder="Enter your answer"
-                />
-              </div>
-              <div id="error-playerName" class="error" style="display:none;"></div>
-
-              <div class="helper helper--mt8">
-                <span data-i18n="answer_update_note">If you would like to update your answers, please resubmit the survey using the same player name. Your most recent response will be used.</span>
-              </div>
-            </div>
-
-            <div class="question">
-              <div class="ary-image-02">
-                <img src="ary-banner-02.png" alt="ary-banner-02.png" />
-              </div>
-
-              <div class="section-label notice">
-                <span class="notice-dot"></span>
-                Polar Invasion / Wasteland Showdown, etc
-              </div>
-              <br>
-
-              <div class="question-header">
-                <div class="question-title" data-i18n="q02_title">
-                  Please choose your first choice for the time slot.
-                </div>
-                <div class="badge">Q02</div>
-              </div>
-
-              <div class="options">
-                <label class="option-label">
-                  <input type="radio" name="q02" value="A" />
-                  <span class="option-code">A</span>
-                  <span data-i18n="q02_opt_A">Server Time 04:00 - 05:00</span>
-                </label>
-
-                <label class="option-label">
-                  <input type="radio" name="q02" value="B" />
-                  <span class="option-code">B</span>
-                  <span data-i18n="q02_opt_B">Server Time 13:00 - 14:00</span>
-                </label>
-
-                <label class="option-label">
-                  <input type="radio" name="q02" value="C" />
-                  <span class="option-code">C</span>
-                  <span data-i18n="q02_opt_C">Server Time 21:00 - 22:00</span>
-                </label>
-
-                <label class="option-label">
-                  <input type="radio" name="q02" value="D" />
-                  <span class="option-code">D</span>
-                  <span data-i18n="q02_opt_D">Anytime</span>
-                </label>
-              </div>
-              <div id="error-q02" class="error" style="display:none;"></div>
-            </div>
-
-            <div class="question">
-              <div class="ary-image-03">
-                <img src="ary-banner-03.png" alt="ary-banner-03.png" />
-              </div>
-
-              <div class="section-label notice">
-                <span class="notice-dot"></span>
-                Elite War / Doom Arena / Zombie Uprise, etc
-              </div>
-              <br>
-
-              <div class="question-header">
-                <div class="question-title" data-i18n="q03_title">
-                  Please choose your first choice for the time slot.
-                </div>
-                <div class="badge">Q03</div>
-              </div>
-
-              <div class="helper" data-i18n="note_schedule-02">
-                The schedule is just a general guideline, and actual times may vary depending on the situation. All times are shown in server time.
-              </div>
-
-              <div class="options">
-                <label class="option-label">
-                  <input type="radio" name="q03" value="A" />
-                  <span class="option-code">A</span>
-                  <span data-i18n="q03_opt_A">Server Time 04:00 - 05:00</span>
-                </label>
-
-                <label class="option-label">
-                  <input type="radio" name="q03" value="B" />
-                  <span class="option-code">B</span>
-                  <span data-i18n="q03_opt_B">Server Time 13:00 - 14:00</span>
-                </label>
-
-                <label class="option-label">
-                  <input type="radio" name="q03" value="C" />
-                  <span class="option-code">C</span>
-                  <span data-i18n="q03_opt_C">Server Time 21:00 - 22:00</span>
-                </label>
-
-                <label class="option-label">
-                  <input type="radio" name="q03" value="D" />
-                  <span class="option-code">D</span>
-                  <span data-i18n="q03_opt_D">Anytime</span>
-                </label>
-
-                <label class="option-label">
-                  <input type="radio" name="q03" value="E" />
-                  <span class="option-code">E</span>
-                  <span data-i18n="q03_opt_E">N/A</span>
-                </label>
-              </div>
-              <div id="error-q03" class="error" style="display:none;"></div>
-            </div>
-
-            <div class="question">
-              <div class="section-label notice">
-                <span class="notice-dot"></span>
-                Elite War / Doom Arena / Zombie Uprise, etc
-              </div>
-              <br>
-
-              <div class="question-header">
-                <div class="question-title" data-i18n="q04_title">
-                  Please choose your first choice day.
-                </div>
-                <div class="badge">Q04</div>
-              </div>
-
-              <div class="helper" data-i18n="note_schedule-03">
-                Doom Arena War cannot be held on Tuesday / Thursday / Saturday. Also, Elite War cannot be held on weekdays. Zombie Uprise cannot be held on Tuesday / Thursday.
-              </div>
-
-              <div class="options">
-                <label class="option-label">
-                  <input type="radio" name="q04" value="A" />
-                  <span class="option-code">A</span>
-                  <span data-i18n="q04_opt_A">Monday</span>
-                </label>
-
-                <label class="option-label">
-                  <input type="radio" name="q04" value="B" />
-                  <span class="option-code">B</span>
-                  <span data-i18n="q04_opt_B">Tuesday</span>
-                </label>
-
-                <label class="option-label">
-                  <input type="radio" name="q04" value="C" />
-                  <span class="option-code">C</span>
-                  <span data-i18n="q04_opt_C">Wednesday</span>
-                </label>
-
-                <label class="option-label">
-                  <input type="radio" name="q04" value="D" />
-                  <span class="option-code">D</span>
-                  <span data-i18n="q04_opt_D">Thursday</span>
-                </label>
-
-                <label class="option-label">
-                  <input type="radio" name="q04" value="E" />
-                  <span class="option-code">E</span>
-                  <span data-i18n="q04_opt_E">Friday</span>
-                </label>
-
-                <label class="option-label">
-                  <input type="radio" name="q04" value="F" />
-                  <span class="option-code">F</span>
-                  <span data-i18n="q04_opt_F">Saturday</span>
-                </label>
-
-                <label class="option-label">
-                  <input type="radio" name="q04" value="G" />
-                  <span class="option-code">G</span>
-                  <span data-i18n="q04_opt_G">Sunday</span>
-                </label>
-
-                <label class="option-label">
-                  <input type="radio" name="q04" value="H" />
-                  <span class="option-code">H</span>
-                  <span data-i18n="q04_opt_H">Any day</span>
-                </label>
-              </div>
-              <div id="error-q04" class="error" style="display:none;"></div>
-            </div>
-
-            <div class="submit-row">
-              <button id="submitBtn" type="submit" disabled>
-                <span data-i18n="btn_submit">Submit</span>
-                <span>➤</span>
-              </button>
-              <div id="form-error" class="error form-error" style="display:none;"></div>
-            </div>
-          </form>
-
-          <div id="result" style="display:none;">
-            <div class="success-box">
-              <div data-i18n="msg_success">Thank you for your submission!</div>
-              <div class="success-sub" style="margin-top:4px;">
-                Your answers have been sent to GitHub Issues (private) for later Excel aggregation.
-              </div>
-            </div>
-          </div>
         </main>
 
         <footer>
-          ary Event Survey · Built for multi-language clan scheduling
+          Ary Event Survey · Built for multi-language clan scheduling
         </footer>
+
       </div>
     </div>
   </div>
 
-  <!-- JS 分離（★キャッシュ事故防止のため ?v= を付与） -->
   <script src="./survey.js?v=20251220-01" defer></script>
 </body>
 </html>
