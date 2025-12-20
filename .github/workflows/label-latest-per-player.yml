@@ -1,0 +1,273 @@
+name: Label survey (latest per player) and optionally remove from older duplicates
+
+on:
+  workflow_dispatch:
+    inputs:
+      label_name:
+        description: "Label to enforce (latest per player only)"
+        required: true
+        default: "survey"
+      dry_run:
+        description: "If true, only logs changes without editing"
+        required: true
+        default: "false"
+      remove_from_older_duplicates:
+        description: "If true, remove the label from older duplicates (open issues only)"
+        required: true
+        default: "true"
+      ensure_label_on_latest:
+        description: "If true, ensure the label exists on the latest issue per player"
+        required: true
+        default: "true"
+
+permissions:
+  issues: write
+
+jobs:
+  enforce_latest_label:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enforce label on latest issue per player (and optionally remove from older)
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const labelName = (core.getInput('label_name') || 'survey').trim();
+            const dryRun = (core.getInput('dry_run') || 'false').toLowerCase() === 'true';
+            const removeFromOlder = (core.getInput('remove_from_older_duplicates') || 'true').toLowerCase() === 'true';
+            const ensureLabelOnLatest = (core.getInput('ensure_label_on_latest') || 'true').toLowerCase() === 'true';
+
+            const owner = context.repo.owner;
+            const repo  = context.repo.repo;
+
+            core.info(`Repo: ${owner}/${repo}`);
+            core.info(`Label: ${labelName}`);
+            core.info(`Dry-run: ${dryRun}`);
+            core.info(`remove_from_older_duplicates: ${removeFromOlder}`);
+            core.info(`ensure_label_on_latest: ${ensureLabelOnLatest}`);
+
+            // -----------------------------
+            // 0) Ensure label exists
+            // -----------------------------
+            async function ensureLabelExists() {
+              try {
+                await github.rest.issues.getLabel({ owner, repo, name: labelName });
+                core.info(`Label "${labelName}" exists.`);
+              } catch (e) {
+                if (e.status === 404) {
+                  if (dryRun) {
+                    core.info(`[dry-run] Would create label "${labelName}"`);
+                    return;
+                  }
+                  core.info(`Creating label "${labelName}"...`);
+                  await github.rest.issues.createLabel({
+                    owner, repo,
+                    name: labelName,
+                    color: "0e8a16",
+                    description: "Survey response issue (latest per player)"
+                  });
+                  core.info(`Created label "${labelName}".`);
+                } else {
+                  throw e;
+                }
+              }
+            }
+
+            await ensureLabelExists();
+
+            // -----------------------------
+            // 1) Helper: labels on issue
+            // -----------------------------
+            function getLabelNames(issue) {
+              return (issue.labels || [])
+                .map(l => (typeof l === "string" ? l : l.name))
+                .filter(Boolean);
+            }
+
+            // -----------------------------
+            // 2) Extract player_name from title (robust)
+            //    Supports:
+            //      "Survey Response: NAME"
+            //      "Survey response from: NAME"
+            //      "survey:NAME"
+            //      "survey: NAME"
+            // -----------------------------
+            function extractPlayerNameFromTitle(title) {
+              if (!title) return null;
+              const t = String(title).trim();
+
+              const patterns = [
+                /^Survey\s*Response\s*:\s*(.+)$/i,
+                /^Survey\s*response\s*from\s*:\s*(.+)$/i,
+                /^survey\s*:\s*(.+)$/i,
+                /^Survey\s*Response\s*from\s*:\s*(.+)$/i,
+              ];
+
+              for (const re of patterns) {
+                const m = t.match(re);
+                if (m && m[1]) return m[1].trim();
+              }
+
+              // If no known prefix, return null (we won't touch those issues)
+              return null;
+            }
+
+            // Normalize key for matching duplicates
+            // - trims
+            // - lowercases
+            // - collapses multiple spaces
+            function normalizePlayerKey(name) {
+              if (!name) return null;
+              return String(name)
+                .trim()
+                .replace(/\s+/g, " ")
+                .toLowerCase();
+            }
+
+            // -----------------------------
+            // 3) Paginate all OPEN issues (exclude PRs)
+            // -----------------------------
+            async function listAllOpenIssues() {
+              const per_page = 100;
+              let page = 1;
+              let all = [];
+
+              while (true) {
+                const { data } = await github.rest.issues.listForRepo({
+                  owner, repo,
+                  state: "open",
+                  per_page,
+                  page
+                });
+
+                if (!data || data.length === 0) break;
+
+                const issuesOnly = data.filter(x => !x.pull_request);
+                all = all.concat(issuesOnly);
+                page++;
+              }
+
+              return all;
+            }
+
+            const allOpenIssues = await listAllOpenIssues();
+            core.info(`Open issues loaded: ${allOpenIssues.length}`);
+
+            // -----------------------------
+            // 4) Build per-player groups from titles
+            // -----------------------------
+            const parsed = [];
+            const skippedNoName = [];
+            for (const issue of allOpenIssues) {
+              const playerName = extractPlayerNameFromTitle(issue.title);
+              const key = normalizePlayerKey(playerName);
+              if (!key) {
+                skippedNoName.push(`#${issue.number} "${issue.title}"`);
+                continue;
+              }
+              parsed.push({
+                issue,
+                playerName,
+                key,
+                createdAt: new Date(issue.created_at).getTime(),
+              });
+            }
+
+            core.info(`Parsed survey-like issues (by title): ${parsed.length}`);
+            if (skippedNoName.length > 0) {
+              core.info(`Skipped (could not extract player_name from title): ${skippedNoName.length}`);
+              // core.info(skippedNoName.join("\n")); // uncomment if you want full list
+            }
+
+            // Group by player key
+            const groups = new Map();
+            for (const item of parsed) {
+              if (!groups.has(item.key)) groups.set(item.key, []);
+              groups.get(item.key).push(item);
+            }
+
+            // Determine latest issue per player
+            const latestByKey = new Map();
+            for (const [key, items] of groups.entries()) {
+              items.sort((a, b) => b.createdAt - a.createdAt); // newest first
+              latestByKey.set(key, items[0]); // newest
+            }
+
+            core.info(`Players found: ${latestByKey.size}`);
+
+            // -----------------------------
+            // 5) Apply label policy:
+            //    - ensure label on latest (optional)
+            //    - remove label from older duplicates (optional)
+            // -----------------------------
+            let ensured = 0;
+            let removed = 0;
+            let alreadyOk = 0;
+            let removalSkippedNoLabel = 0;
+
+            for (const [key, items] of groups.entries()) {
+              const latest = latestByKey.get(key);
+              const latestIssue = latest.issue;
+
+              // Ensure label on latest
+              if (ensureLabelOnLatest) {
+                const latestLabels = getLabelNames(latestIssue);
+                const has = latestLabels.includes(labelName);
+                if (!has) {
+                  core.info(`Latest for "${latest.playerName}" -> add "${labelName}" to #${latestIssue.number}`);
+                  if (!dryRun) {
+                    await github.rest.issues.addLabels({
+                      owner, repo,
+                      issue_number: latestIssue.number,
+                      labels: [labelName]
+                    });
+                  }
+                  ensured++;
+                } else {
+                  alreadyOk++;
+                }
+              }
+
+              // Remove label from older ones
+              if (removeFromOlder) {
+                for (let i = 1; i < items.length; i++) { // older duplicates
+                  const olderIssue = items[i].issue;
+                  const olderLabels = getLabelNames(olderIssue);
+                  const hasOlder = olderLabels.includes(labelName);
+
+                  if (!hasOlder) {
+                    removalSkippedNoLabel++;
+                    continue;
+                  }
+
+                  core.info(`Older duplicate for "${items[i].playerName}" -> remove "${labelName}" from #${olderIssue.number}`);
+                  if (!dryRun) {
+                    await github.rest.issues.removeLabel({
+                      owner, repo,
+                      issue_number: olderIssue.number,
+                      name: labelName
+                    });
+                  }
+                  removed++;
+                }
+              }
+            }
+
+            core.notice(
+              `DONE: players=${latestByKey.size}, ensured_latest=${ensured}, latest_already_ok=${alreadyOk}, removed_from_older=${removed}, older_without_label=${removalSkippedNoLabel}, dry_run=${dryRun}`
+            );
+
+            // Extra debug: show top duplicates (optional)
+            const dupes = [];
+            for (const [key, items] of groups.entries()) {
+              if (items.length >= 2) {
+                dupes.push({ key, count: items.length, name: items[0].playerName });
+              }
+            }
+            dupes.sort((a,b) => b.count - a.count);
+            if (dupes.length) {
+              core.info(`Duplicate players (top 10):`);
+              for (const d of dupes.slice(0,10)) {
+                core.info(`- ${d.name} (count=${d.count})`);
+              }
+            }
