@@ -1,0 +1,110 @@
+name: Add survey label to all OPEN issues
+
+on:
+  workflow_dispatch:
+    inputs:
+      label_name:
+        description: "Label to add"
+        required: true
+        default: "survey"
+      dry_run:
+        description: "If true, only logs targets without editing"
+        required: true
+        default: "false"
+
+permissions:
+  issues: write
+
+jobs:
+  add_label:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add label to open issues
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const labelName = (core.getInput('label_name') || 'survey').trim();
+            const dryRun = (core.getInput('dry_run') || 'false').toLowerCase() === 'true';
+
+            const owner = context.repo.owner;
+            const repo  = context.repo.repo;
+
+            core.info(`Repo: ${owner}/${repo}`);
+            core.info(`Label: ${labelName}`);
+            core.info(`Dry-run: ${dryRun}`);
+
+            // ---- 1) Ensure label exists (create if missing) ----
+            async function ensureLabel() {
+              try {
+                await github.rest.issues.getLabel({ owner, repo, name: labelName });
+                core.info(`Label "${labelName}" exists.`);
+              } catch (e) {
+                if (e.status === 404) {
+                  if (dryRun) {
+                    core.info(`[dry-run] Would create label "${labelName}"`);
+                    return;
+                  }
+                  core.info(`Creating label "${labelName}"...`);
+                  await github.rest.issues.createLabel({
+                    owner, repo,
+                    name: labelName,
+                    color: "0e8a16", // green
+                    description: "Survey response issue"
+                  });
+                  core.info(`Created label "${labelName}".`);
+                } else {
+                  throw e;
+                }
+              }
+            }
+
+            await ensureLabel();
+
+            // ---- 2) Paginate all OPEN issues ----
+            const per_page = 100;
+            let page = 1;
+            let total = 0;
+            let updated = 0;
+            let skippedAlready = 0;
+
+            while (true) {
+              const { data } = await github.rest.issues.listForRepo({
+                owner, repo,
+                state: "open",
+                per_page,
+                page
+              });
+
+              if (!data || data.length === 0) break;
+
+              // exclude PRs (GitHub returns PRs in issues API)
+              const issues = data.filter(x => !x.pull_request);
+
+              for (const issue of issues) {
+                total++;
+
+                const labels = (issue.labels || []).map(l => typeof l === "string" ? l : l.name).filter(Boolean);
+                const has = labels.includes(labelName);
+
+                if (has) {
+                  skippedAlready++;
+                  continue;
+                }
+
+                core.info(`Target #${issue.number} "${issue.title}"`);
+
+                if (!dryRun) {
+                  await github.rest.issues.addLabels({
+                    owner, repo,
+                    issue_number: issue.number,
+                    labels: [labelName]
+                  });
+                  updated++;
+                }
+              }
+
+              page++;
+            }
+
+            core.notice(`DONE: total(open issues scanned)=${total}, labeled=${updated}, already_had_label=${skippedAlready}, dry_run=${dryRun}`);
