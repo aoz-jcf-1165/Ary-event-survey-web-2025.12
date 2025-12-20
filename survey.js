@@ -1,16 +1,14 @@
 // =====================
-// survey.js (ARY / FULL REPLACE)
+// survey.js (FULL REPLACE / original-compatible / Ary)
 // =====================
 
-// ==== Cloudflare Pages Functions API エンドポイント ====
-// 同一ドメイン: /api/submit
-const API_URL = "/api/submit";
+// ★ Ary Pages Functions API
+const API_URL = "https://ary-event-survey-web-2025-12.pages.dev/api/submit";
 
 // ==== 多言語翻訳設定 ====
 const TRANSLATION_FILE = "translations.tsv";
 
-// ===== CDN PDF link =====
-// ※ PDFカードをコメントアウトしていても、リンク処理は残しておいてOK
+// ===== CDN PDF link (Ary) =====
 const CDN_PDF_URL =
   "https://cdn.jsdelivr.net/gh/aoz-jcf-1165/Ary-event-survey-web-2025.12@main/share_document/Ary-event-survey-2025-12.pdf";
 
@@ -39,10 +37,10 @@ const LANGUAGE_LABELS = {
 let translations = {};
 let availableLangs = [];
 
-// ★ 言語は localStorage を優先（無ければ en）
+// 言語は localStorage 優先（無ければ en）
 let currentLang = (localStorage.getItem("ary_lang") || "en").trim() || "en";
 
-// ★ 翻訳ロード完了フラグ（未完了なら送信禁止）
+// 翻訳ロード完了フラグ（ただし「未完了でも送信可能」に変更）
 let isAppReady = false;
 
 function parseTSV(text) {
@@ -84,7 +82,6 @@ function applyLanguage(lang) {
     const translated = t(key);
     if (translated != null) el.textContent = translated;
   });
-
   document.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
     const key = el.dataset.i18nPlaceholder;
     const translated = t(key);
@@ -97,11 +94,8 @@ function populateLanguageSelect() {
   if (!select) return;
 
   select.innerHTML = "";
-
-  // ordered: en first
   const ordered = ["en", ...availableLangs.filter(l => l !== "en")];
 
-  // currentLang が TSV に存在しない場合は en に戻す
   if (!availableLangs.includes(currentLang)) currentLang = "en";
 
   ordered.forEach(code => {
@@ -113,7 +107,8 @@ function populateLanguageSelect() {
     select.appendChild(opt);
   });
 
-  select.addEventListener("change", () => applyLanguage(select.value));
+  // 既存の change ハンドラを重複登録しない
+  select.onchange = () => applyLanguage(select.value);
 }
 
 function wireCdnLink() {
@@ -131,9 +126,12 @@ async function loadTranslations() {
     wireCdnLink();
 
     const res = await fetch(TRANSLATION_FILE, { cache: "no-store" });
+
     if (!res.ok) {
-      console.error("Failed to load translations.tsv");
-      setSubmitEnabled(false);
+      console.error("Failed to load translations.tsv:", res.status);
+      isAppReady = false;
+      setError("form-error", `Warning: failed to load translations.tsv (${res.status}). You can still submit, but UI may stay in English.`);
+      setSubmitEnabled(true);
       return;
     }
 
@@ -146,7 +144,9 @@ async function loadTranslations() {
     setSubmitEnabled(true);
   } catch (e) {
     console.error("Error loading translations:", e);
-    setSubmitEnabled(false);
+    isAppReady = false;
+    setError("form-error", `Warning: translations load error. You can still submit. (${e && e.message ? e.message : e})`);
+    setSubmitEnabled(true);
   }
 }
 
@@ -207,21 +207,20 @@ async function readResponseSafe(res) {
 async function handleSubmit(e) {
   e.preventDefault();
 
-  // ★ 翻訳ロード前は送信禁止（language事故の根絶）
   if (!isAppReady) {
-    setError("form-error", "Loading languages... Please wait a moment and try again.");
-    return;
+    setError("form-error", "Note: languages are still loading (or failed). Submitting with current UI language.");
   }
 
   scrollToBottomSmooth();
 
-  setError("form-error", "");
   setError("error-playerName", "");
   setError("error-q02", "");
   setError("error-q03", "");
   setError("error-q04", "");
 
-  const playerName = document.getElementById("playerName")?.value?.trim() || "";
+  const playerNameEl = document.getElementById("playerName");
+  const playerName = playerNameEl ? playerNameEl.value.trim() : "";
+
   const q02 = getRadioValue("q02");
   const q03 = getRadioValue("q03");
   const q04 = getRadioValue("q04");
@@ -234,26 +233,19 @@ async function handleSubmit(e) {
   if (hasError) return;
 
   const timestamp = new Date().toISOString();
-
-  // ★ language は currentLang ではなく select から必ず取る（ズレを潰す）
   const language = getSelectedLanguageSafe();
+
+  // 反映
   applyLanguage(language);
 
-  const row = {
-    timestamp,
-    language,
-    player_name: playerName,
-    Q2_time: q02,
-    Q3_time: q03,
-    Q4_day: q04
-  };
-
-  // 任意：デバッグ用CSV行（HTMLに無くてもOK）
+  const row = { timestamp, language, player_name: playerName, Q2_time: q02, Q3_time: q03, Q4_day: q04 };
   const csvRow = encodeCsvRow(row);
+
   const output = document.getElementById("csvOutput");
   if (output) output.value = csvRow;
 
   setFormDisabled(true);
+  setSubmitEnabled(false);
 
   try {
     const res = await fetch(API_URL, {
@@ -266,34 +258,35 @@ async function handleSubmit(e) {
       const detail = await readResponseSafe(res);
       console.error("API error:", res.status, detail);
 
-      // Functions 側が {stage, githubStatus, githubBody} を返すので見える化
       if (detail && typeof detail === "object") {
         const msg =
           `Server error (${res.status}). ` +
           (detail.stage ? `[${detail.stage}] ` : "") +
           (detail.githubStatus ? `GitHub:${detail.githubStatus} ` : "") +
-          (detail.error ? `- ${detail.error}` : "");
+          (detail.error ? `- ${detail.error}` : "") +
+          (detail.gh && detail.gh.status ? ` (gh:${detail.gh.status})` : "");
         setError("form-error", msg.trim());
       } else {
         setError("form-error", `Server error (${res.status}). Please try again later.`);
       }
 
-      setFormDisabled(false);
       return;
     }
 
     const data = await res.json().catch(() => ({}));
     if (!data.ok) {
       setError("form-error", "API error. Please try again.");
-      setFormDisabled(false);
       return;
     }
+
+    setError("form-error", "");
 
     const resultBox = document.getElementById("result");
     if (resultBox) resultBox.style.display = "block";
 
     scrollToBottomSmooth();
-    document.getElementById("surveyForm")?.reset();
+    const form = document.getElementById("surveyForm");
+    if (form) form.reset();
 
   } catch (err) {
     console.error("Network error:", err);
@@ -308,7 +301,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("surveyForm");
   if (form) form.addEventListener("submit", handleSubmit);
 
-  setSubmitEnabled(false);
+  // ★ 起動時は一旦有効（無反応対策）
+  setSubmitEnabled(true);
+
   loadTranslations();
   wireCdnLink();
 });
