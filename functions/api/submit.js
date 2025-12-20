@@ -4,45 +4,50 @@
 
 const FIXED_OWNER = "aoz-jcf-1165";
 const FIXED_REPO  = "Ary-event-survey-web-2025.12";
-
 const SURVEY_LABEL = "survey";
 
-export async function onRequest(context) {
+export async function onRequestOptions({ request }) {
+  // CORS preflight
+  return json(204, null, corsHeaders());
+}
+
+export async function onRequestGet({ request }) {
+  // ルート存在確認用（ブラウザで開くとここに来る）
+  const ray = request.headers.get("cf-ray") || "";
+  const requestId = crypto.randomUUID();
+  const now = new Date().toISOString();
+
+  return json(
+    405,
+    {
+      ok: false,
+      error: "Use POST only.",
+      hint: {
+        url: "/api/submit",
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body_example: {
+          language: "en",
+          player_name: "YourName",
+          Q2_time: "A",
+          Q3_time: "B",
+          Q4_day: "H",
+        },
+      },
+      time: now,
+      requestId,
+      ray,
+    },
+    corsHeaders()
+  );
+}
+
+export async function onRequestPost(context) {
   const { request, env } = context;
 
   const ray = request.headers.get("cf-ray") || "";
   const requestId = crypto.randomUUID();
   const now = new Date().toISOString();
-
-  if (request.method === "OPTIONS") {
-    return json(204, null, corsHeaders());
-  }
-
-  if (request.method !== "POST") {
-    return json(
-      405,
-      {
-        ok: false,
-        error: "Use POST only.",
-        hint: {
-          url: "/api/submit",
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body_example: {
-            language: "en",
-            player_name: "YourName",
-            Q2_time: "A",
-            Q3_time: "B",
-            Q4_day: "H",
-          },
-        },
-        time: now,
-        requestId,
-        ray,
-      },
-      { ...corsHeaders() }
-    );
-  }
 
   const token = (env?.GITHUB_TOKEN || "").trim();
   if (!token) {
@@ -97,8 +102,7 @@ export async function onRequest(context) {
   };
 
   const issueBodyText =
-    `<!-- survey_response -->\n` +
-    `\n` +
+    `<!-- survey_response -->\n\n` +
     "```json\n" +
     JSON.stringify(issueBodyJson, null, 2) +
     "\n```\n";
