@@ -142,6 +142,11 @@ select {
   max-width: min-content; 
 }
 
+body.ary select option {
+  background-color: #16090a;
+  color: #f3f4f6;
+}
+
 main {
   margin-top: 8px;
 }
