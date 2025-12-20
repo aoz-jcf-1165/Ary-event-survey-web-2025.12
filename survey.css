@@ -142,7 +142,7 @@ select {
   max-width: min-content; 
 }
 
-body.ary select option {
+body select option {
   background-color: #16090a;
   color: #f3f4f6;
 }
